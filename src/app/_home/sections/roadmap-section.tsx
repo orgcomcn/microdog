@@ -28,9 +28,7 @@ export function RoadmapSection() {
               </span>
             ))}
           </div>
-          <p className="mt-5 text-sm leading-7 text-white/62">
-            目标：验证产品、验证用户、验证市场。
-          </p>
+          
         </article>
 
         <article className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055)_0%,rgba(255,255,255,0.02)_100%)] p-5">
@@ -47,9 +45,7 @@ export function RoadmapSection() {
               </span>
             ))}
           </div>
-          <p className="mt-5 text-sm leading-7 text-white/62">
-            目标：完善平台生态闭环。
-          </p>
+         
         </article>
 
         <article className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055)_0%,rgba(255,255,255,0.02)_100%)] p-5">

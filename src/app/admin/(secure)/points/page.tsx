@@ -28,13 +28,20 @@ import { getAdminUsers } from "@/modules/admin/user-service";
 export default async function AdminPointsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ page?: string; pageSize?: string; keyword?: string; type?: string }>;
+  searchParams?: Promise<{
+    page?: string;
+    pageSize?: string;
+    keyword?: string;
+    type?: string;
+    adjustKeyword?: string;
+  }>;
 }) {
   const params = await searchParams;
   const query = readAdminListQuery(params);
   const keyword = readAdminFilterValue(params?.keyword);
   const type = readAdminFilterValue(params?.type) || "ALL";
-  const [logs, users] = await Promise.all([
+  const adjustKeyword = readAdminFilterValue(params?.adjustKeyword);
+  const [logs, matchedUsers] = await Promise.all([
     getAdminPointLogs({
       ...query,
       keyword,
@@ -48,7 +55,14 @@ export default async function AdminPointsPage({
         | "LOCK_REWARD"
         | "SYSTEM_ADJUST",
     }),
-    getAdminUsers({ page: 1, pageSize: 50 }),
+    adjustKeyword
+      ? getAdminUsers({
+          page: 1,
+          pageSize: 10,
+          keyword: adjustKeyword,
+          status: "ALL",
+        })
+      : null,
   ]);
 
   return (
@@ -61,16 +75,65 @@ export default async function AdminPointsPage({
 
       <AdminFormSection>
         <AdminSectionTitle>手动调账</AdminSectionTitle>
+        <form method="get" className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_140px] lg:items-start">
+          <div className="grid gap-2">
+            <span className="text-sm font-medium text-white/78">搜索用户</span>
+            <AdminInput
+              name="adjustKeyword"
+              type="text"
+              defaultValue={adjustKeyword}
+              placeholder="输入 UID、钱包地址或邀请码"
+            />
+            <span className="text-xs text-white/45">
+              按 UID、钱包地址或邀请码搜索，避免大用户量时加载整个用户列表。
+            </span>
+          </div>
+          <button
+            type="submit"
+            className="h-11 w-full self-start rounded-2xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22 lg:mt-8"
+          >
+            查询用户
+          </button>
+        </form>
+
         <form action={adjustPointsAction} className="mt-5 grid gap-4 lg:grid-cols-2">
-          <AdminField label="选择用户">
-            <AdminSelect name="userId" required>
-              <option value="">选择用户</option>
-              {users.items.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.uid ?? "-"} / {user.walletAddress}
+          <AdminField
+            label="选择用户"
+            className="lg:col-span-2"
+            hint={
+              adjustKeyword
+                ? matchedUsers && matchedUsers.items.length > 0
+                  ? "从搜索结果里选择一个用户后再提交调账。"
+                  : "没有找到匹配用户，请调整关键词后重试。"
+                : "先在上方搜索用户，再进行调账。"
+            }
+          >
+            <div className="grid gap-3">
+              <AdminSelect
+                name="userId"
+                required
+                disabled={!matchedUsers || matchedUsers.items.length === 0}
+              >
+                <option value="">
+                  {!adjustKeyword
+                    ? "请先搜索用户"
+                    : matchedUsers && matchedUsers.items.length > 0
+                      ? "选择搜索结果中的用户"
+                      : "没有匹配用户"}
                 </option>
-              ))}
-            </AdminSelect>
+                {matchedUsers?.items.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {(user.uid ?? "-")} / {user.walletAddress} / 当前积分 {user.pointsBalance}
+                  </option>
+                ))}
+              </AdminSelect>
+
+              {matchedUsers && matchedUsers.items.length > 0 ? (
+                <div className="rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white/65">
+                  共找到 {matchedUsers.total} 个匹配用户，当前展示前 {matchedUsers.items.length} 个结果。
+                </div>
+              ) : null}
+            </div>
           </AdminField>
 
           <AdminField label="积分变动" hint="正数发放，负数扣减。">

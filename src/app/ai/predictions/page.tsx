@@ -20,10 +20,7 @@ export default async function PredictionsPage() {
       <section className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.88)_0%,rgba(5,10,25,0.84)_100%)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.26)] backdrop-blur-xl">
         {predictions.length === 0 ? (
           <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-5 text-sm text-white/58">
-            <div>当前还没有正在前台展示的 AI 预测。</div>
-            <div className="mt-3 leading-6 text-white/46">
-              已发布 {visibility.publishedCount} 条，当前展示 {visibility.visibleCount} 条，未到发布时间 {visibility.pendingCount} 条，已过有效期 {visibility.expiredCount} 条。
-            </div>
+            <div>当前还没有 AI 预测数据。</div>
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
