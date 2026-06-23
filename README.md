@@ -26,6 +26,8 @@ cp .env.example .env
 | `DATABASE_URL` | 是 | PostgreSQL 连接串，Next.js API 和 Prisma 都依赖它。 |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | 建议 | WalletConnect 项目 ID；不填会退回 demo 值，只适合本地调试。 |
 | `NEXT_PUBLIC_APP_NAME` | 否 | 钱包连接弹窗里显示的应用名。 |
+| `ADMIN_USERNAME` | 建议 | 后台管理员账号，默认值是 `admin`。 |
+| `ADMIN_PASSWORD` | 建议 | 后台管理员密码，默认值是 `admin123`。 |
 | `COINGECKO_API_KEY` | 建议 | CoinGecko Demo / Pro API Key。行情页默认走服务端请求，建议至少配置 Demo key。 |
 | `COINGECKO_API_BASE_URL` | 否 | CoinGecko API 基础地址，默认 `https://api.coingecko.com/api/v3`。只有切 Pro 地址时才需要改。 |
 | `MARKET_MICRODOGE_COINGECKO_ID` | 二选一 | 如果 MicroDOGE 已被 CoinGecko 收录，填它的 `coin id`。 |
@@ -117,6 +119,12 @@ npx prisma migrate dev --name init
 npx prisma db push
 ```
 
+如果你已经启动过旧版本数据库，这次后台功能新增了管理员会话、公告、预测、系统配置等表，建议直接再执行一次：
+
+```bash
+npx prisma db push
+```
+
 5. 启动 Next.js 开发环境：
 
 ```bash
@@ -128,6 +136,34 @@ npm run dev
 ```text
 http://localhost:3000
 ```
+
+### 后台登录入口
+
+后台地址：
+
+```text
+http://localhost:3000/admin/login
+```
+
+默认管理员账号密码：
+
+```text
+admin
+admin123
+```
+
+说明：
+
+- 后台登录和前台钱包登录是两套独立会话。
+- `/admin` 不在前台导航里直接暴露，需要手动访问后台地址。
+- 当前后台已支持：
+  - 用户管理：查看、冻结、解冻、角色调整
+  - 预测管理：BTC / ETH 手动发布、修改、上下架、删除
+  - 公告管理：发布、修改、删除、排序
+  - 积分管理：手动加减分、查看流水
+  - 锁仓管理：查看记录、配置锁仓周期与释放比例
+  - 系统配置：注册送分、邀请奖励、AI 每日提问次数
+- 钱包用户被冻结后，将不能继续使用原有钱包会话登录。
 
 ## 服务器部署
 
@@ -156,6 +192,8 @@ cp .env.example .env.production
 DATABASE_URL="postgresql://user:password@db-host:5432/microdog_v1?schema=public"
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="your-walletconnect-project-id"
 NEXT_PUBLIC_APP_NAME="MicroDOG V1"
+ADMIN_USERNAME="admin"
+ADMIN_PASSWORD="admin123"
 COINGECKO_API_KEY="your-coingecko-demo-or-pro-key"
 COINGECKO_API_BASE_URL="https://api.coingecko.com/api/v3"
 MARKET_MICRODOGE_COINGECKO_ID=""
@@ -196,6 +234,8 @@ docker build \
 ```bash
 docker run --rm --env-file .env.production microdog-v1 npx prisma db push
 ```
+
+如果服务器之前已经跑过旧版结构，这一步同样要重新执行一次，把新增的后台表同步进去。
 
 后续如果你开始维护 `prisma/migrations`，把这一步切换成：
 

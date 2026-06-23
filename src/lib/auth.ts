@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma";
 const AUTH_NONCE_COOKIE = "microdog_auth_nonce";
 const AUTH_SESSION_COOKIE = "microdog_session";
 const AUTH_REFERRAL_COOKIE = "microdog_referral_code";
+const ADMIN_SESSION_COOKIE = "microdog_admin_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const NONCE_TTL_SECONDS = 60 * 10;
 const REFERRAL_TTL_SECONDS = 60 * 60 * 24 * 30;
 
@@ -75,6 +77,16 @@ export async function clearSessionCookie() {
   cookieStore.set(AUTH_SESSION_COOKIE, "", buildCookieOptions(0));
 }
 
+export async function setAdminSessionCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_SESSION_COOKIE, token, buildCookieOptions(ADMIN_SESSION_TTL_MS / 1000));
+}
+
+export async function clearAdminSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_SESSION_COOKIE, "", buildCookieOptions(0));
+}
+
 export function buildWalletLoginMessage(address: string, nonce: string) {
   const normalizedAddress = address.toLowerCase();
   const issuedAt = new Date().toISOString();
@@ -120,6 +132,11 @@ export async function findSessionUser() {
     return null;
   }
 
+  if (session.user.status === "FROZEN") {
+    await clearSessionCookie();
+    return null;
+  }
+
   return session.user;
 }
 
@@ -142,6 +159,55 @@ export async function persistUserSession(userId: string, walletAddress: string) 
   return {
     expiresAt: expiresAt.toISOString(),
   };
+}
+
+export async function persistAdminSession(username: string) {
+  const rawToken = createSessionToken();
+  const tokenHash = sha256(rawToken);
+  const expiresAt = new Date(Date.now() + ADMIN_SESSION_TTL_MS);
+
+  await prisma.adminSession.create({
+    data: {
+      username,
+      token: tokenHash,
+      expiresAt,
+    },
+  });
+
+  await setAdminSessionCookie(rawToken);
+
+  return {
+    username,
+    expiresAt: expiresAt.toISOString(),
+  };
+}
+
+export async function findAdminSession() {
+  const cookieStore = await cookies();
+  const rawToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+
+  if (!rawToken) {
+    return null;
+  }
+
+  const tokenHash = sha256(rawToken);
+  const session = await prisma.adminSession.findUnique({
+    where: { token: tokenHash },
+  });
+
+  if (!session || session.expiresAt < new Date()) {
+    await clearAdminSessionCookie();
+    return null;
+  }
+
+  await prisma.adminSession.update({
+    where: { id: session.id },
+    data: {
+      lastSeenAt: new Date(),
+    },
+  });
+
+  return session;
 }
 
 export function normalizeReferralCode(value: string) {

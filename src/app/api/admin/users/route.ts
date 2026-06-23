@@ -1,5 +1,5 @@
 import { fail, ok } from "@/lib/api";
-import { getAdminOverview } from "@/modules/admin/overview-service";
+import { getAdminUsers } from "@/modules/admin/user-service";
 import { requireAdminApiSession } from "../_utils";
 
 export async function GET() {
@@ -10,9 +10,9 @@ export async function GET() {
       return auth.response;
     }
 
-    return ok(await getAdminOverview());
+    return ok(await getAdminUsers());
   } catch (error) {
-    const message = error instanceof Error ? error.message : "读取后台概览失败。";
+    const message = error instanceof Error ? error.message : "读取用户列表失败。";
     return fail(message, 500);
   }
 }

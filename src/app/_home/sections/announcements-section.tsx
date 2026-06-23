@@ -1,6 +1,8 @@
-import { announcements } from "../content";
+import { getPublishedAnnouncementsForFront } from "@/modules/admin/announcement-service";
 
-export function AnnouncementsSection() {
+export async function AnnouncementsSection() {
+  const announcements = await getPublishedAnnouncementsForFront();
+
   return (
     <section
       id="announcements"
@@ -27,7 +29,7 @@ export function AnnouncementsSection() {
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         {announcements.map((item) => (
           <article
-            key={item.title}
+            key={item.id}
             className="group rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.055)_0%,rgba(255,255,255,0.02)_100%)] p-5 transition hover:border-cyan-300/18 hover:bg-[linear-gradient(180deg,rgba(17,24,39,0.92)_0%,rgba(10,16,31,0.92)_100%)]"
           >
             <div className="flex items-center justify-between gap-3">

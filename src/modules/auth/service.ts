@@ -1,5 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import { PointLogType, UserStatus } from "@prisma/client";
+
 import { persistUserSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { ensureSystemConfig } from "@/modules/admin/settings-service";
 import { createNextUid, createUniqueInviteCode } from "@/modules/auth/referral";
 
 async function ensureUserIdentityFields(userId: string) {
@@ -36,6 +39,7 @@ async function ensureUserIdentityFields(userId: string) {
 
 export async function createWalletSession(address: string, referralCode?: string | null) {
   const walletAddress = address.toLowerCase();
+  const systemConfig = await ensureSystemConfig();
   const existingUser = await prisma.user.findUnique({
     where: { walletAddress },
   });
@@ -43,40 +47,109 @@ export async function createWalletSession(address: string, referralCode?: string
   let user = existingUser;
 
   if (!user) {
-    const normalizedReferralCode = referralCode?.trim().toUpperCase() || null;
-    let invitedByUserId: string | null = null;
+    user = await prisma.$transaction(async (tx) => {
+      const normalizedReferralCode = referralCode?.trim().toUpperCase() || null;
+      let invitedByUserId: string | null = null;
 
-    if (normalizedReferralCode) {
-      const inviter = await prisma.user.findUnique({
-        where: { inviteCode: normalizedReferralCode },
-        select: {
-          id: true,
-          walletAddress: true,
+      if (normalizedReferralCode) {
+        const inviter = await tx.user.findUnique({
+          where: { inviteCode: normalizedReferralCode },
+          select: {
+            id: true,
+            walletAddress: true,
+            pointsBalance: true,
+          },
+        });
+
+        if (!inviter) {
+          throw new Error("邀请链接无效或已过期，请重新确认。");
+        }
+
+        if (inviter.walletAddress === walletAddress) {
+          throw new Error("不能使用自己的邀请链接注册。");
+        }
+
+        invitedByUserId = inviter.id;
+      }
+
+      const registerRewardPoints = systemConfig.registerRewardPoints;
+      const inviteRewardPoints = systemConfig.inviteRewardPoints;
+
+      const createdUser = await tx.user.create({
+        data: {
+          uid: await createNextUid(),
+          inviteCode: await createUniqueInviteCode(),
+          walletAddress,
+          invitedByUserId,
+          referralBoundAt: invitedByUserId ? new Date() : null,
+          pointsBalance: registerRewardPoints,
+          lastLoginAt: new Date(),
         },
       });
 
-      if (!inviter) {
-        throw new Error("邀请链接无效或已过期，请重新确认。");
+      if (registerRewardPoints > 0) {
+        await tx.pointLog.create({
+          data: {
+            userId: createdUser.id,
+            change: registerRewardPoints,
+            balanceAfter: registerRewardPoints,
+            type: PointLogType.REGISTER_REWARD,
+            reason: "注册奖励",
+            operatorLabel: "system",
+          },
+        });
       }
 
-      if (inviter.walletAddress === walletAddress) {
-        throw new Error("不能使用自己的邀请链接注册。");
+      if (invitedByUserId && inviteRewardPoints > 0) {
+        const inviter = await tx.user.findUniqueOrThrow({
+          where: {
+            id: invitedByUserId,
+          },
+        });
+
+        const inviterBalance = inviter.pointsBalance + inviteRewardPoints;
+
+        await tx.user.update({
+          where: {
+            id: invitedByUserId,
+          },
+          data: {
+            pointsBalance: inviterBalance,
+          },
+        });
+
+        await tx.pointLog.create({
+          data: {
+            userId: invitedByUserId,
+            change: inviteRewardPoints,
+            balanceAfter: inviterBalance,
+            type: PointLogType.INVITE_REWARD,
+            reason: `邀请奖励：${walletAddress}`,
+            operatorLabel: "system",
+          },
+        });
       }
 
-      invitedByUserId = inviter.id;
-    }
-
-    user = await prisma.user.create({
-      data: {
-        uid: await createNextUid(),
-        inviteCode: await createUniqueInviteCode(),
-        walletAddress,
-        invitedByUserId,
-        referralBoundAt: invitedByUserId ? new Date() : null,
-      },
+      return createdUser;
     });
   } else {
+    if (user.status === UserStatus.FROZEN) {
+      throw new Error(user.frozenReason || "当前账户已被冻结，请联系管理员。");
+    }
+
     user = await ensureUserIdentityFields(user.id);
+    user = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        lastLoginAt: new Date(),
+      },
+    });
+  }
+
+  if (user.status === UserStatus.FROZEN) {
+    throw new Error(user.frozenReason || "当前账户已被冻结，请联系管理员。");
   }
 
   const session = await persistUserSession(user.id, walletAddress);
