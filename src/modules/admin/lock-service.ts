@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { buildPagination, toPaginationResult } from "@/modules/admin/pagination";
 
 export async function ensureDefaultLockPlans() {
   const count = await prisma.lockPlanConfig.count();
@@ -34,14 +35,45 @@ export async function ensureDefaultLockPlans() {
   });
 }
 
-export async function getAdminLocks() {
+export async function getAdminLocks(input?: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  status?: "ALL" | "ACTIVE" | "RELEASED";
+}) {
   await ensureDefaultLockPlans();
+  const { page, pageSize, skip, take } = buildPagination(input?.page, input?.pageSize);
+  const keyword = input?.keyword?.trim();
+  const status = input?.status && input.status !== "ALL" ? input.status : undefined;
+  const where = {
+    ...(status ? { status } : {}),
+    ...(keyword
+      ? {
+          OR: [
+            { assetSymbol: { contains: keyword, mode: "insensitive" as const } },
+            {
+              user: {
+                is: {
+                  OR: [
+                    { uid: { contains: keyword, mode: "insensitive" as const } },
+                    { walletAddress: { contains: keyword, mode: "insensitive" as const } },
+                  ],
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
 
-  const [positions, plans] = await Promise.all([
+  const [positions, positionTotal, plans] = await Promise.all([
     prisma.lockPosition.findMany({
+      where,
       orderBy: {
         createdAt: "desc",
       },
+      skip,
+      take,
       include: {
         user: {
           select: {
@@ -51,6 +83,7 @@ export async function getAdminLocks() {
         },
       },
     }),
+    prisma.lockPosition.count({ where }),
     prisma.lockPlanConfig.findMany({
       orderBy: [
         { sortOrder: "asc" },
@@ -60,21 +93,26 @@ export async function getAdminLocks() {
   ]);
 
   return {
-    positions: positions.map((row) => ({
-      id: row.id,
-      userId: row.userId,
-      uid: row.user.uid,
-      walletAddress: row.user.walletAddress,
-      assetSymbol: row.assetSymbol,
-      amount: row.amount.toString(),
-      durationDays: row.durationDays,
-      releaseRatioBps: row.releaseRatioBps,
-      status: row.status,
-      startAt: row.startAt.toISOString(),
-      endAt: row.endAt?.toISOString() ?? null,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    })),
+    positions: toPaginationResult(
+      positions.map((row) => ({
+        id: row.id,
+        userId: row.userId,
+        uid: row.user.uid,
+        walletAddress: row.user.walletAddress,
+        assetSymbol: row.assetSymbol,
+        amount: row.amount.toString(),
+        durationDays: row.durationDays,
+        releaseRatioBps: row.releaseRatioBps,
+        status: row.status,
+        startAt: row.startAt.toISOString(),
+        endAt: row.endAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+      positionTotal,
+      page,
+      pageSize,
+    ),
     plans: plans.map((plan) => ({
       ...plan,
       createdAt: plan.createdAt.toISOString(),

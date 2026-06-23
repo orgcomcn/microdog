@@ -1,15 +1,40 @@
 import { AdminPageShell } from "@/app/admin/_components/admin-page-shell";
+import { AdminPagination } from "@/app/admin/_components/admin-pagination";
 import { AdminTopbar } from "@/app/admin/_components/admin-topbar";
+import {
+  AdminStatusBadge,
+  AdminTable,
+  AdminTableCard,
+  AdminTableToolbar,
+  AdminTableWrap,
+  AdminTd,
+  AdminTh,
+  AdminTr,
+} from "@/app/admin/_components/admin-table";
+import {
+  AdminField,
+  AdminFormSection,
+  AdminInput,
+  AdminSectionTitle,
+  AdminSelect,
+  AdminTextarea,
+} from "@/app/admin/_components/admin-form";
+import { readAdminListQuery } from "@/app/admin/_components/admin-query";
 import {
   createAnnouncementAction,
   deleteAnnouncementAction,
-  updateAnnouncementAction,
 } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
 import { getAdminAnnouncements } from "@/modules/admin/announcement-service";
+import { AnnouncementEditDialog } from "./_components/announcement-edit-dialog";
 
-export default async function AdminAnnouncementsPage() {
-  const announcements = await getAdminAnnouncements();
+export default async function AdminAnnouncementsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ page?: string; pageSize?: string }>;
+}) {
+  const query = readAdminListQuery(await searchParams);
+  const announcements = await getAdminAnnouncements(query);
 
   return (
     <AdminPageShell
@@ -19,48 +44,28 @@ export default async function AdminAnnouncementsPage() {
     >
       <AdminTopbar />
 
-      <section className="mt-5 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.92)_0%,rgba(5,10,25,0.9)_100%)] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-        <div className="text-xs font-semibold tracking-[0.22em] text-cyan-100 uppercase">
-          新增公告
-        </div>
-
+      <AdminFormSection>
+        <AdminSectionTitle>新增公告</AdminSectionTitle>
         <form action={createAnnouncementAction} className="mt-5 grid gap-4">
-          <input
-            name="title"
-            type="text"
-            placeholder="公告标题"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-            required
-          />
-          <input
-            name="tag"
-            type="text"
-            placeholder="标签，例如 平台公告"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-          />
-          <textarea
-            name="content"
-            rows={4}
-            placeholder="公告内容"
-            className="rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 py-3 text-white outline-none"
-            required
-          />
+          <AdminField label="公告标题">
+            <AdminInput name="title" type="text" placeholder="例如：系统升级通知" required />
+          </AdminField>
+          <AdminField label="标签" hint="前台展示用，留空也可以。">
+            <AdminInput name="tag" type="text" placeholder="例如：平台公告" />
+          </AdminField>
+          <AdminField label="公告内容">
+            <AdminTextarea name="content" rows={4} placeholder="填写完整公告内容" required />
+          </AdminField>
           <div className="grid gap-4 lg:grid-cols-2">
-            <input
-              name="sortOrder"
-              type="number"
-              defaultValue={0}
-              className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-              required
-            />
-            <select
-              name="status"
-              defaultValue="PUBLISHED"
-              className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-            >
-              <option value="DRAFT">草稿</option>
-              <option value="PUBLISHED">已发布</option>
-            </select>
+            <AdminField label="排序">
+              <AdminInput name="sortOrder" type="number" defaultValue={0} required />
+            </AdminField>
+            <AdminField label="状态">
+              <AdminSelect name="status" defaultValue="PUBLISHED">
+                <option value="DRAFT">草稿</option>
+                <option value="PUBLISHED">已发布</option>
+              </AdminSelect>
+            </AdminField>
           </div>
           <button
             type="submit"
@@ -69,79 +74,80 @@ export default async function AdminAnnouncementsPage() {
             创建公告
           </button>
         </form>
-      </section>
+      </AdminFormSection>
 
-      <section className="mt-5 space-y-4">
-        {announcements.map((item) => (
-          <article
-            key={item.id}
-            className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.92)_0%,rgba(5,10,25,0.9)_100%)] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.3)] backdrop-blur-xl"
-          >
-            <form action={updateAnnouncementAction} className="grid gap-4">
-              <input type="hidden" name="id" value={item.id} />
-              <input
-                name="title"
-                type="text"
-                defaultValue={item.title}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-                required
-              />
-              <input
-                name="tag"
-                type="text"
-                defaultValue={item.tag ?? ""}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-              />
-              <textarea
-                name="content"
-                rows={4}
-                defaultValue={item.content}
-                className="rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 py-3 text-white outline-none"
-                required
-              />
-              <div className="grid gap-4 lg:grid-cols-2">
-                <input
-                  name="sortOrder"
-                  type="number"
-                  defaultValue={item.sortOrder}
-                  className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-                  required
-                />
-                <select
-                  name="status"
-                  defaultValue={item.status}
-                  className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-                >
-                  <option value="DRAFT">草稿</option>
-                  <option value="PUBLISHED">已发布</option>
-                </select>
-              </div>
+      <AdminTableCard>
+        <AdminTableToolbar>
+          <div>
+            <div className="text-xs font-semibold tracking-[0.22em] text-cyan-100 uppercase">
+              公告列表
+            </div>
+            <div className="mt-2 text-sm text-white/52">
+              列表只展示摘要信息，编辑通过弹窗完成，避免公告内容长文本直接占满整页。
+            </div>
+          </div>
+        </AdminTableToolbar>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-white/52">
-                <div>
-                  发布时间：{item.publishedAt ? formatShanghaiDateTime(item.publishedAt) : "-"} / 更新时间：{formatShanghaiDateTime(item.updatedAt)}
-                </div>
-                <button
-                  type="submit"
-                  className="h-10 rounded-xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
-                >
-                  保存公告
-                </button>
-              </div>
-            </form>
+        <AdminTableWrap>
+          <AdminTable>
+            <thead>
+              <tr>
+                <AdminTh className="min-w-[220px]">标题</AdminTh>
+                <AdminTh>标签</AdminTh>
+                <AdminTh>状态</AdminTh>
+                <AdminTh>排序</AdminTh>
+                <AdminTh className="min-w-[320px]">内容摘要</AdminTh>
+                <AdminTh className="min-w-[180px]">发布时间</AdminTh>
+                <AdminTh className="min-w-[180px]">更新时间</AdminTh>
+                <AdminTh className="min-w-[180px]">操作</AdminTh>
+              </tr>
+            </thead>
+            <tbody>
+              {announcements.items.map((item) => (
+                <AdminTr key={item.id}>
+                  <AdminTd className="font-semibold text-white">{item.title}</AdminTd>
+                  <AdminTd>{item.tag ?? "-"}</AdminTd>
+                  <AdminTd>
+                    <AdminStatusBadge tone={item.status === "PUBLISHED" ? "success" : "default"}>
+                      {item.status}
+                    </AdminStatusBadge>
+                  </AdminTd>
+                  <AdminTd>{item.sortOrder}</AdminTd>
+                  <AdminTd className="max-w-[320px] text-sm leading-6 text-white/68">
+                    {item.content}
+                  </AdminTd>
+                  <AdminTd>
+                    {item.publishedAt ? formatShanghaiDateTime(item.publishedAt) : "-"}
+                  </AdminTd>
+                  <AdminTd>{formatShanghaiDateTime(item.updatedAt)}</AdminTd>
+                  <AdminTd>
+                    <div className="flex flex-wrap gap-2">
+                      <AnnouncementEditDialog item={item} />
+                      <form action={deleteAnnouncementAction}>
+                        <input type="hidden" name="id" value={item.id} />
+                        <button
+                          type="submit"
+                          className="h-10 rounded-xl bg-rose-400/16 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-400/22"
+                        >
+                          删除
+                        </button>
+                      </form>
+                    </div>
+                  </AdminTd>
+                </AdminTr>
+              ))}
+            </tbody>
+          </AdminTable>
+        </AdminTableWrap>
+      </AdminTableCard>
 
-            <form action={deleteAnnouncementAction} className="mt-3">
-              <input type="hidden" name="id" value={item.id} />
-              <button
-                type="submit"
-                className="h-10 rounded-xl bg-rose-400/16 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-400/22"
-              >
-                删除公告
-              </button>
-            </form>
-          </article>
-        ))}
-      </section>
+      <AdminPagination
+        pathname="/admin/announcements"
+        page={announcements.page}
+        pageSize={announcements.pageSize}
+        total={announcements.total}
+        totalPages={announcements.totalPages}
+      />
     </AdminPageShell>
   );
 }

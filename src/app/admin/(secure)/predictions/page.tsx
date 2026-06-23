@@ -1,88 +1,83 @@
 import { AdminPageShell } from "@/app/admin/_components/admin-page-shell";
+import { AdminDateTimeField } from "@/app/admin/_components/admin-date-time-field";
+import { AdminPagination } from "@/app/admin/_components/admin-pagination";
 import { AdminTopbar } from "@/app/admin/_components/admin-topbar";
+import {
+  AdminStatusBadge,
+  AdminTable,
+  AdminTableCard,
+  AdminTableToolbar,
+  AdminTableWrap,
+  AdminTd,
+  AdminTh,
+  AdminTr,
+} from "@/app/admin/_components/admin-table";
+import {
+  AdminField,
+  AdminFormSection,
+  AdminInput,
+  AdminSectionTitle,
+  AdminSelect,
+  AdminTextarea,
+} from "@/app/admin/_components/admin-form";
+import { readAdminListQuery } from "@/app/admin/_components/admin-query";
 import {
   createPredictionAction,
   deletePredictionAction,
-  updatePredictionAction,
 } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
 import { getAdminPredictions } from "@/modules/admin/prediction-service";
+import { PredictionEditDialog } from "./_components/prediction-edit-dialog";
 
-export default async function AdminPredictionsPage() {
-  const predictions = await getAdminPredictions();
+export default async function AdminPredictionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ page?: string; pageSize?: string }>;
+}) {
+  const query = readAdminListQuery(await searchParams);
+  const predictions = await getAdminPredictions(query);
 
   return (
     <AdminPageShell
       title="后台 / 预测管理"
-      description="管理员手动发布 BTC / ETH 预测，控制方向、目标价格、发布时间、有效时间和上下架状态。"
-      badge="Admin / Predictions"
     >
       <AdminTopbar />
 
-      <section className="mt-5 rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.92)_0%,rgba(5,10,25,0.9)_100%)] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.3)] backdrop-blur-xl">
-        <div className="text-xs font-semibold tracking-[0.22em] text-cyan-100 uppercase">
-          新增预测
-        </div>
-
+      <AdminFormSection>
+        <AdminSectionTitle>新增预测</AdminSectionTitle>
         <form action={createPredictionAction} className="mt-5 grid gap-4 lg:grid-cols-2">
-          <select
-            name="symbol"
-            defaultValue="BTC"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-          >
-            <option value="BTC">BTC</option>
-            <option value="ETH">ETH</option>
-          </select>
-
-          <select
-            name="direction"
-            defaultValue="UP"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-          >
-            <option value="UP">涨</option>
-            <option value="DOWN">跌</option>
-          </select>
-
-          <input
-            name="targetPrice"
-            type="text"
-            placeholder="目标价格，例如 115000"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-            required
-          />
-
-          <select
-            name="status"
-            defaultValue="PUBLISHED"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-          >
-            <option value="DRAFT">草稿</option>
-            <option value="PUBLISHED">已发布</option>
-            <option value="UNPUBLISHED">已下架</option>
-            <option value="EXPIRED">已过期</option>
-          </select>
-
-          <input
-            name="publishAt"
-            type="datetime-local"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-            required
-          />
-
-          <input
-            name="effectiveUntil"
-            type="datetime-local"
-            className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-            required
-          />
-
-          <textarea
-            name="summary"
-            rows={4}
-            placeholder="预测说明"
-            className="lg:col-span-2 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 py-3 text-white outline-none"
-          />
-
+          <AdminField label="币种">
+            <AdminSelect name="symbol" defaultValue="BTC">
+              <option value="BTC">BTC</option>
+              <option value="ETH">ETH</option>
+            </AdminSelect>
+          </AdminField>
+          <AdminField label="方向">
+            <AdminSelect name="direction" defaultValue="UP">
+              <option value="UP">涨</option>
+              <option value="DOWN">跌</option>
+            </AdminSelect>
+          </AdminField>
+          <AdminField label="目标价格">
+            <AdminInput name="targetPrice" type="text" placeholder="例如 115000" required />
+          </AdminField>
+          <AdminField label="状态">
+            <AdminSelect name="status" defaultValue="PUBLISHED">
+              <option value="DRAFT">草稿</option>
+              <option value="PUBLISHED">已发布</option>
+              <option value="UNPUBLISHED">已下架</option>
+              <option value="EXPIRED">已过期</option>
+            </AdminSelect>
+          </AdminField>
+          <AdminField label="发布时间">
+            <AdminDateTimeField name="publishAt" required />
+          </AdminField>
+          <AdminField label="有效时间">
+            <AdminDateTimeField name="effectiveUntil" required />
+          </AdminField>
+          <AdminField label="预测说明" className="lg:col-span-2">
+            <AdminTextarea name="summary" rows={4} placeholder="补充预测背景、策略依据或风险说明" />
+          </AdminField>
           <button
             type="submit"
             className="h-11 rounded-2xl bg-[linear-gradient(90deg,#6f61ff_0%,#4ad9ff_100%)] px-4 text-sm font-medium text-white transition hover:opacity-95"
@@ -90,105 +85,91 @@ export default async function AdminPredictionsPage() {
             发布预测
           </button>
         </form>
-      </section>
+      </AdminFormSection>
 
-      <section className="mt-5 space-y-4">
-        {predictions.map((prediction) => (
-          <article
-            key={prediction.id}
-            className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.92)_0%,rgba(5,10,25,0.9)_100%)] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.3)] backdrop-blur-xl"
-          >
-            <form action={updatePredictionAction} className="grid gap-4 lg:grid-cols-2">
-              <input type="hidden" name="id" value={prediction.id} />
+      <AdminTableCard>
+        <AdminTableToolbar>
+          <div>
+            <div className="text-xs font-semibold tracking-[0.22em] text-cyan-100 uppercase">
+              预测列表
+            </div>
+            <div className="mt-2 text-sm text-white/52">
+              列表只展示摘要信息，编辑通过弹窗完成，避免占用整页空间。前台仅显示状态为 `PUBLISHED` 且当前时间落在发布时间区间内的数据。
+            </div>
+          </div>
+        </AdminTableToolbar>
 
-              <select
-                name="symbol"
-                defaultValue={prediction.symbol}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-              >
-                <option value="BTC">BTC</option>
-                <option value="ETH">ETH</option>
-              </select>
+        <AdminTableWrap>
+          <AdminTable>
+            <thead>
+              <tr>
+                <AdminTh>币种</AdminTh>
+                <AdminTh>方向</AdminTh>
+                <AdminTh>目标价</AdminTh>
+                <AdminTh>状态</AdminTh>
+                <AdminTh>前台可见</AdminTh>
+                <AdminTh className="min-w-[180px]">发布时间</AdminTh>
+                <AdminTh className="min-w-[180px]">有效时间</AdminTh>
+                <AdminTh>说明</AdminTh>
+                <AdminTh className="min-w-[180px]">操作</AdminTh>
+              </tr>
+            </thead>
+            <tbody>
+              {predictions.items.map((prediction) => (
+                <AdminTr key={prediction.id}>
+                  <AdminTd className="font-semibold text-white">{prediction.symbol}</AdminTd>
+                  <AdminTd>
+                    <AdminStatusBadge tone={prediction.direction === "UP" ? "success" : "danger"}>
+                      {prediction.direction === "UP" ? "涨" : "跌"}
+                    </AdminStatusBadge>
+                  </AdminTd>
+                  <AdminTd>{prediction.targetPrice}</AdminTd>
+                  <AdminTd>
+                    <AdminStatusBadge tone="info">{prediction.status}</AdminStatusBadge>
+                  </AdminTd>
+                  <AdminTd>
+                    <AdminStatusBadge tone={prediction.isVisibleOnFront ? "success" : "default"}>
+                      {prediction.isVisibleOnFront ? "展示中" : "未展示"}
+                    </AdminStatusBadge>
+                    {!prediction.isVisibleOnFront ? (
+                      <div className="mt-2 text-xs leading-5 text-white/45">
+                        {prediction.frontVisibilityReason}
+                      </div>
+                    ) : null}
+                  </AdminTd>
+                  <AdminTd>{formatShanghaiDateTime(prediction.publishAt)}</AdminTd>
+                  <AdminTd>{formatShanghaiDateTime(prediction.effectiveUntil)}</AdminTd>
+                  <AdminTd className="max-w-[280px] text-sm leading-6 text-white/68">
+                    {prediction.summary || "暂无说明"}
+                  </AdminTd>
+                  <AdminTd>
+                    <div className="flex flex-wrap gap-2">
+                      <PredictionEditDialog prediction={prediction} />
+                      <form action={deletePredictionAction}>
+                        <input type="hidden" name="id" value={prediction.id} />
+                        <button
+                          type="submit"
+                          className="h-10 rounded-xl bg-rose-400/16 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-400/22"
+                        >
+                          删除
+                        </button>
+                      </form>
+                    </div>
+                  </AdminTd>
+                </AdminTr>
+              ))}
+            </tbody>
+          </AdminTable>
+        </AdminTableWrap>
+      </AdminTableCard>
 
-              <select
-                name="direction"
-                defaultValue={prediction.direction}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-              >
-                <option value="UP">涨</option>
-                <option value="DOWN">跌</option>
-              </select>
-
-              <input
-                name="targetPrice"
-                type="text"
-                defaultValue={prediction.targetPrice}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-                required
-              />
-
-              <select
-                name="status"
-                defaultValue={prediction.status}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-              >
-                <option value="DRAFT">草稿</option>
-                <option value="PUBLISHED">已发布</option>
-                <option value="UNPUBLISHED">已下架</option>
-                <option value="EXPIRED">已过期</option>
-              </select>
-
-              <input
-                name="publishAt"
-                type="datetime-local"
-                defaultValue={prediction.publishAt.slice(0, 16)}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-                required
-              />
-
-              <input
-                name="effectiveUntil"
-                type="datetime-local"
-                defaultValue={prediction.effectiveUntil.slice(0, 16)}
-                className="h-11 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 text-white outline-none"
-                required
-              />
-
-              <textarea
-                name="summary"
-                rows={3}
-                defaultValue={prediction.summary ?? ""}
-                className="lg:col-span-2 rounded-2xl border border-white/10 bg-[#0d1532]/88 px-4 py-3 text-white outline-none"
-              />
-
-              <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-3 text-sm text-white/52">
-                <div>
-                  发布时间：{formatShanghaiDateTime(prediction.publishAt)} / 更新时间：{formatShanghaiDateTime(prediction.updatedAt)}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    className="h-10 rounded-xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
-                  >
-                    保存
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            <form action={deletePredictionAction} className="mt-3">
-              <input type="hidden" name="id" value={prediction.id} />
-              <button
-                type="submit"
-                className="h-10 rounded-xl bg-rose-400/16 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-400/22"
-              >
-                删除预测
-              </button>
-            </form>
-          </article>
-        ))}
-      </section>
+      <AdminPagination
+        pathname="/admin/predictions"
+        page={predictions.page}
+        pageSize={predictions.pageSize}
+        total={predictions.total}
+        totalPages={predictions.totalPages}
+      />
     </AdminPageShell>
   );
 }

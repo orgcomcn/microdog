@@ -1,30 +1,61 @@
 import { UserStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import {
+  buildPagination,
+  toPaginationResult,
+} from "@/modules/admin/pagination";
 
-export async function getAdminUsers() {
-  const users = await prisma.user.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      invitedBy: {
-        select: {
-          uid: true,
-          walletAddress: true,
+export async function getAdminUsers(input?: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  status?: UserStatus | "ALL";
+}) {
+  const { page, pageSize, skip, take } = buildPagination(input?.page, input?.pageSize);
+  const keyword = input?.keyword?.trim();
+  const status = input?.status && input.status !== "ALL" ? input.status : undefined;
+  const where = {
+    ...(status ? { status } : {}),
+    ...(keyword
+      ? {
+          OR: [
+            { uid: { contains: keyword, mode: "insensitive" as const } },
+            { walletAddress: { contains: keyword, mode: "insensitive" as const } },
+            { inviteCode: { contains: keyword, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take,
+      include: {
+        invitedBy: {
+          select: {
+            uid: true,
+            walletAddress: true,
+          },
+        },
+        _count: {
+          select: {
+            referrals: true,
+            pointsLedger: true,
+            lockPositions: true,
+          },
         },
       },
-      _count: {
-        select: {
-          referrals: true,
-          pointsLedger: true,
-          lockPositions: true,
-        },
-      },
-    },
-  });
+    }),
+    prisma.user.count({ where }),
+  ]);
 
-  return users.map((user) => ({
+  const items = users.map((user) => ({
     id: user.id,
     uid: user.uid,
     walletAddress: user.walletAddress,
@@ -46,6 +77,8 @@ export async function getAdminUsers() {
     pointLogCount: user._count.pointsLedger,
     lockCount: user._count.lockPositions,
   }));
+
+  return toPaginationResult(items, total, page, pageSize);
 }
 
 export async function updateAdminUserStatus(input: {

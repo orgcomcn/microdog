@@ -1,23 +1,60 @@
 import { PointLogType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { buildPagination, toPaginationResult } from "@/modules/admin/pagination";
 
-export async function getAdminPointLogs() {
-  const rows = await prisma.pointLog.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      user: {
-        select: {
-          uid: true,
-          walletAddress: true,
+export async function getAdminPointLogs(input?: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  type?: PointLogType | "ALL";
+}) {
+  const { page, pageSize, skip, take } = buildPagination(input?.page, input?.pageSize);
+  const keyword = input?.keyword?.trim();
+  const type = input?.type && input.type !== "ALL" ? input.type : undefined;
+  const where = {
+    ...(type && type !== "ALL" ? { type } : {}),
+    ...(keyword
+      ? {
+          OR: [
+            { reason: { contains: keyword, mode: "insensitive" as const } },
+            { operatorLabel: { contains: keyword, mode: "insensitive" as const } },
+            {
+              user: {
+                is: {
+                  OR: [
+                    { uid: { contains: keyword, mode: "insensitive" as const } },
+                    { walletAddress: { contains: keyword, mode: "insensitive" as const } },
+                  ],
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const [rows, total] = await Promise.all([
+    prisma.pointLog.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take,
+      include: {
+        user: {
+          select: {
+            uid: true,
+            walletAddress: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.pointLog.count({ where }),
+  ]);
 
-  return rows.map((row) => ({
+  const items = rows.map((row) => ({
     id: row.id,
     userId: row.userId,
     uid: row.user.uid,
@@ -29,6 +66,8 @@ export async function getAdminPointLogs() {
     operatorLabel: row.operatorLabel,
     createdAt: row.createdAt.toISOString(),
   }));
+
+  return toPaginationResult(items, total, page, pageSize);
 }
 
 export async function applyAdminPointAdjustment(input: {

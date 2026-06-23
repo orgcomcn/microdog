@@ -1,21 +1,30 @@
 import { AnnouncementStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { buildPagination, toPaginationResult } from "@/modules/admin/pagination";
 
-export async function getAdminAnnouncements() {
-  const rows = await prisma.announcement.findMany({
-    orderBy: [
-      { sortOrder: "asc" },
-      { createdAt: "desc" },
-    ],
-  });
+export async function getAdminAnnouncements(input?: {
+  page?: number;
+  pageSize?: number;
+}) {
+  const { page, pageSize, skip, take } = buildPagination(input?.page, input?.pageSize);
+  const [rows, total] = await Promise.all([
+    prisma.announcement.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      skip,
+      take,
+    }),
+    prisma.announcement.count(),
+  ]);
 
-  return rows.map((row) => ({
+  const items = rows.map((row) => ({
     ...row,
     publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }));
+
+  return toPaginationResult(items, total, page, pageSize);
 }
 
 export async function createAdminAnnouncement(input: {
