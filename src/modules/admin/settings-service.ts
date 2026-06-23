@@ -11,6 +11,8 @@ export async function ensureSystemConfig() {
     config = await prisma.systemConfig.create({
       data: {
         id: "default",
+        registerRewardPoints: 100,
+        inviteRewardPoints: 100,
       },
     });
   }

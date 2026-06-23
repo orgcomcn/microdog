@@ -21,6 +21,7 @@ import {
 import { readAdminFilterValue, readAdminListQuery } from "@/app/admin/_components/admin-query";
 import { adjustPointsAction } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
+import { getPointLogTypeLabel } from "@/lib/labels";
 import { getAdminPointLogs } from "@/modules/admin/points-service";
 import { getAdminUsers } from "@/modules/admin/user-service";
 
@@ -150,7 +151,7 @@ export default async function AdminPointsPage({
                     <div className="mt-1 text-xs text-white/52">{log.walletAddress}</div>
                   </AdminTd>
                   <AdminTd>
-                    <AdminStatusBadge tone="info">{log.type}</AdminStatusBadge>
+                    <AdminStatusBadge tone="info">{getPointLogTypeLabel(log.type)}</AdminStatusBadge>
                   </AdminTd>
                   <AdminTd className={log.change >= 0 ? "text-emerald-200" : "text-rose-200"}>
                     <span className="font-semibold">{log.change >= 0 ? `+${log.change}` : log.change}</span>

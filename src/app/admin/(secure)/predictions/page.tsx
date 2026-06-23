@@ -26,6 +26,7 @@ import {
   deletePredictionAction,
 } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
+import { getPredictionStatusLabel } from "@/lib/labels";
 import { getAdminPredictions } from "@/modules/admin/prediction-service";
 import { PredictionEditDialog } from "./_components/prediction-edit-dialog";
 
@@ -125,7 +126,7 @@ export default async function AdminPredictionsPage({
                   </AdminTd>
                   <AdminTd>{prediction.targetPrice}</AdminTd>
                   <AdminTd>
-                    <AdminStatusBadge tone="info">{prediction.status}</AdminStatusBadge>
+                    <AdminStatusBadge tone="info">{getPredictionStatusLabel(prediction.status)}</AdminStatusBadge>
                   </AdminTd>
                   <AdminTd>
                     <AdminStatusBadge tone={prediction.isVisibleOnFront ? "success" : "default"}>

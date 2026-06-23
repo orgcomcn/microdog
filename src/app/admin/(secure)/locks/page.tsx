@@ -21,6 +21,7 @@ import {
 } from "@/app/admin/_components/admin-table";
 import { updateLockPlanAction } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
+import { getLockStatusLabel } from "@/lib/labels";
 import { getAdminLocks } from "@/modules/admin/lock-service";
 
 export default async function AdminLocksPage({
@@ -134,7 +135,7 @@ export default async function AdminLocksPage({
                       </AdminTd>
                       <AdminTd>
                         <AdminStatusBadge tone={position.status === "ACTIVE" ? "success" : "default"}>
-                          {position.status}
+                          {getLockStatusLabel(position.status)}
                         </AdminStatusBadge>
                       </AdminTd>
                       <AdminTd>{position.assetSymbol}</AdminTd>

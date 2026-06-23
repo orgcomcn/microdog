@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { formatShanghaiDateTime } from "@/lib/datetime";
+import { getPredictionStatusLabel, getUserStatusLabel } from "@/lib/labels";
 import { getAdminOverview } from "@/modules/admin/overview-service";
 import { getAdminPredictions } from "@/modules/admin/prediction-service";
 import { getAdminUsers } from "@/modules/admin/user-service";
@@ -138,7 +139,7 @@ export default async function AdminPage({
                     </div>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/72">
-                    {user.status}
+                    {getUserStatusLabel(user.status)}
                   </div>
                 </div>
               </div>
@@ -175,7 +176,7 @@ export default async function AdminPage({
                     </div>
                   </div>
                   <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/72">
-                    {prediction.status}
+                    {getPredictionStatusLabel(prediction.status)}
                   </div>
                 </div>
               </div>

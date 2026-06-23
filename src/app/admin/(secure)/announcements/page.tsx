@@ -25,6 +25,7 @@ import {
   deleteAnnouncementAction,
 } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
+import { getAnnouncementStatusLabel } from "@/lib/labels";
 import { getAdminAnnouncements } from "@/modules/admin/announcement-service";
 import { AnnouncementEditDialog } from "./_components/announcement-edit-dialog";
 
@@ -109,7 +110,7 @@ export default async function AdminAnnouncementsPage({
                   <AdminTd>{item.tag ?? "-"}</AdminTd>
                   <AdminTd>
                     <AdminStatusBadge tone={item.status === "PUBLISHED" ? "success" : "default"}>
-                      {item.status}
+                      {getAnnouncementStatusLabel(item.status)}
                     </AdminStatusBadge>
                   </AdminTd>
                   <AdminTd>{item.sortOrder}</AdminTd>

@@ -1,4 +1,5 @@
 import { formatShanghaiDateTime } from "@/lib/datetime";
+import { getUserStatusLabel } from "@/lib/labels";
 import { getAdminUsers } from "@/modules/admin/user-service";
 
 import { AdminPagination } from "../../_components/admin-pagination";
@@ -98,7 +99,7 @@ export default async function AdminUsersPage({
                   </AdminTd>
                   <AdminTd>
                     <AdminStatusBadge tone={user.status === "ACTIVE" ? "success" : "danger"}>
-                      {user.status}
+                      {getUserStatusLabel(user.status)}
                     </AdminStatusBadge>
                     {user.frozenReason ? (
                       <div className="mt-2 text-xs text-rose-100/78">{user.frozenReason}</div>

@@ -74,6 +74,8 @@ export async function createWalletSession(address: string, referralCode?: string
 
       const registerRewardPoints = systemConfig.registerRewardPoints;
       const inviteRewardPoints = systemConfig.inviteRewardPoints;
+      const invitedUserRewardPoints = invitedByUserId ? inviteRewardPoints : 0;
+      const initialBalance = registerRewardPoints + invitedUserRewardPoints;
 
       const createdUser = await tx.user.create({
         data: {
@@ -82,7 +84,7 @@ export async function createWalletSession(address: string, referralCode?: string
           walletAddress,
           invitedByUserId,
           referralBoundAt: invitedByUserId ? new Date() : null,
-          pointsBalance: registerRewardPoints,
+          pointsBalance: initialBalance,
           lastLoginAt: new Date(),
         },
       });
@@ -95,6 +97,19 @@ export async function createWalletSession(address: string, referralCode?: string
             balanceAfter: registerRewardPoints,
             type: PointLogType.REGISTER_REWARD,
             reason: "注册奖励",
+            operatorLabel: "system",
+          },
+        });
+      }
+
+      if (invitedUserRewardPoints > 0) {
+        await tx.pointLog.create({
+          data: {
+            userId: createdUser.id,
+            change: invitedUserRewardPoints,
+            balanceAfter: initialBalance,
+            type: PointLogType.INVITE_REWARD,
+            reason: "被邀请注册奖励",
             operatorLabel: "system",
           },
         });
