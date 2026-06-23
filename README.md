@@ -26,6 +26,11 @@ cp .env.example .env
 | `DATABASE_URL` | 是 | PostgreSQL 连接串，Next.js API 和 Prisma 都依赖它。 |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | 建议 | WalletConnect 项目 ID；不填会退回 demo 值，只适合本地调试。 |
 | `NEXT_PUBLIC_APP_NAME` | 否 | 钱包连接弹窗里显示的应用名。 |
+| `COINGECKO_API_KEY` | 建议 | CoinGecko Demo / Pro API Key。行情页默认走服务端请求，建议至少配置 Demo key。 |
+| `COINGECKO_API_BASE_URL` | 否 | CoinGecko API 基础地址，默认 `https://api.coingecko.com/api/v3`。只有切 Pro 地址时才需要改。 |
+| `MARKET_MICRODOGE_COINGECKO_ID` | 二选一 | 如果 MicroDOGE 已被 CoinGecko 收录，填它的 `coin id`。 |
+| `MARKET_MICRODOGE_PLATFORM_ID` | 二选一 | 如果没有 `coin id`，填链平台 id，例如 `ethereum`、`bsc`、`base`。 |
+| `MARKET_MICRODOGE_CONTRACT_ADDRESS` | 二选一 | 和 `MARKET_MICRODOGE_PLATFORM_ID` 配套使用，填 MicroDOGE 合约地址。 |
 
 示例内容已经放在 [`.env.example`](./.env.example)。当前工作区里的 `.env` 也已经补好，默认连接本机 `5432` 的 `microdog_v1` 数据库。
 
@@ -33,6 +38,8 @@ cp .env.example .env
 
 - `DATABASE_URL` 缺失时，服务端 Prisma 初始化会直接失败，相关初始化逻辑在 `src/lib/prisma.ts`。
 - 生产环境里 `NEXT_PUBLIC_*` 属于前端构建时变量。改完后必须重新执行 `next build` 或重新构建 Docker 镜像，单独重启进程不会让前端拿到新值。
+- `COINGECKO_API_KEY` 不属于前端变量，应该只放服务端环境里。当前行情接口实现位于 `src/app/api/market/tickers/route.ts`，由服务端代请求 CoinGecko。
+- `MARKET_MICRODOGE_COINGECKO_ID` 和 `MARKET_MICRODOGE_PLATFORM_ID + MARKET_MICRODOGE_CONTRACT_ADDRESS` 二选一即可；推荐优先填 CoinGecko `coin id`。
 
 ## 本地启动
 
@@ -149,6 +156,11 @@ cp .env.example .env.production
 DATABASE_URL="postgresql://user:password@db-host:5432/microdog_v1?schema=public"
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="your-walletconnect-project-id"
 NEXT_PUBLIC_APP_NAME="MicroDOG V1"
+COINGECKO_API_KEY="your-coingecko-demo-or-pro-key"
+COINGECKO_API_BASE_URL="https://api.coingecko.com/api/v3"
+MARKET_MICRODOGE_COINGECKO_ID=""
+MARKET_MICRODOGE_PLATFORM_ID=""
+MARKET_MICRODOGE_CONTRACT_ADDRESS=""
 ```
 
 注意：
@@ -171,6 +183,11 @@ docker build \
   --build-arg NEXT_PUBLIC_APP_NAME \
   .
 ```
+
+说明：
+
+- `COINGECKO_API_KEY`、`MARKET_MICRODOGE_*` 这些运行时环境变量不需要作为 `build-arg` 传入，因为它们只在服务端 API 路由里使用。
+- 如果你未来切到 CoinGecko Pro，可以把 `COINGECKO_API_BASE_URL` 改成对应的 Pro 域名。
 
 #### 4. 初始化数据库
 
