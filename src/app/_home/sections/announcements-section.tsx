@@ -16,9 +16,6 @@ export async function AnnouncementsSection() {
           <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white">
             平台动态与重要通知
           </h2>
-          <p className="mt-3 max-w-3xl text-base leading-8 text-white/62">
-            这里后续会接入后台公告数据。当前先展示前端结构，便于后面直接联动后台发布、排序和展示状态。
-          </p>
         </div>
 
         <div className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-white/58">
