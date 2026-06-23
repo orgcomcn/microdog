@@ -83,8 +83,6 @@ public/
   行情页，占位。
 - `src/app/ai/predictions/page.tsx`
   AI 预测页，占位。
-- `src/app/ai/chat/page.tsx`
-  AI 聊天页，占位。
 - `src/app/points/page.tsx`
   积分页，占位。
 - `src/app/locks/page.tsx`
@@ -110,8 +108,6 @@ public/
   行情接口，目前返回 mock。
 - `src/app/api/ai/predict/route.ts`
   AI 预测接口，目前返回 mock。
-- `src/app/api/ai/chat/route.ts`
-  AI 聊天接口，目前返回 mock。
 - `src/app/api/points/route.ts`
   积分接口，目前返回 mock。
 - `src/app/api/locks/route.ts`
@@ -265,7 +261,6 @@ public/
 作用：
 
 - 现在返回 mock 预测结果
-- 现在返回 mock 聊天回复
 
 后面接模型时，这里应该变成：
 
@@ -392,7 +387,6 @@ public/
 
 - 市场行情
 - AI 预测
-- AI 聊天
 - 积分
 - 锁仓
 - 后台统计
@@ -421,15 +415,6 @@ public/
 2. 在 `src/modules/points/service.ts` 写真实查询逻辑
 3. 在 `src/app/api/points/route.ts` 调用 points service
 4. 在 `src/app/points/page.tsx` 或前端组件里展示真实数据
-
-### 一个实际例子：做“AI 聊天”
-
-应该这样改：
-
-1. 明确 AI 调用是否需要记录日志、扣积分
-2. 在 `src/modules/ai/service.ts` 接模型
-3. 在 `src/app/api/ai/chat/route.ts` 做参数校验和调用
-4. 在 `src/app/ai/chat/page.tsx` 做输入框、消息流、错误态
 
 ---
 
@@ -571,4 +556,3 @@ public/
 - 方案 A：把“积分模块”从 mock 改成真实可用
 - 方案 B：把“dashboard”改成真实用户中心
 - 方案 C：把“后台 admin 权限”先补上
-

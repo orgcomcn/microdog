@@ -8,7 +8,6 @@ const defaultNavItems = [
   { href: "/" as Route, label: "首页" },
   { href: "/market" as Route, label: "行情" },
   { href: "/ai/predictions" as Route, label: "AI预测" },
-  { href: "/ai/chat" as Route, label: "AI聊天" },
   { href: "/points" as Route, label: "积分" },
   { href: "/locks" as Route, label: "锁仓" },
   { href: "/dashboard" as Route, label: "个人中心" },

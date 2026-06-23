@@ -25,9 +25,3 @@ export async function getMockPrediction(symbol: string) {
     summary: target.summary || "后台手动发布的预测内容。",
   };
 }
-
-export async function getMockChatReply(message: string) {
-  return {
-    reply: `已收到消息：${message}。当前为 V1 占位回复。`,
-  };
-}
