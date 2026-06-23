@@ -32,7 +32,9 @@ async function releaseExpiredLocks() {
         where: { id: current.userId },
       });
 
-      const releasePoints = Number(current.amount);
+      const releasePoints = Math.floor(
+        Number(current.amount) * (current.releaseRatioBps / 10000),
+      );
       const nextBalance = user.pointsBalance + releasePoints;
 
       await tx.user.update({
@@ -55,7 +57,10 @@ async function releaseExpiredLocks() {
           change: releasePoints,
           balanceAfter: nextBalance,
           type: PointLogType.LOCK_REWARD,
-          reason: `锁仓到期解锁：${current.durationDays}天`,
+          reason:
+            current.durationDays === 0
+              ? "锁仓到期解锁：1分钟测试锁仓"
+              : `锁仓到期解锁：${current.durationDays}天`,
           operatorLabel: "system",
         },
       });
@@ -103,12 +108,17 @@ export async function getUserLocksOverview(
     prisma.lockPlanConfig.findMany({
       where: {
         isActive: true,
-        durationDays: {
-          in: [30, 90, 180],
-        },
+        OR: [
+          { durationDays: 0 },
+          {
+            durationDays: {
+              in: [30, 90, 180],
+            },
+          },
+        ],
       },
       orderBy: {
-        durationDays: "asc",
+        sortOrder: "asc",
       },
     }),
     prisma.lockPosition.findMany({
@@ -146,13 +156,20 @@ export async function getUserLocksOverview(
       name: plan.name,
       durationDays: plan.durationDays,
       releaseRatioBps: plan.releaseRatioBps,
+      releaseRatioPercent: plan.releaseRatioBps / 100,
       sortOrder: plan.sortOrder,
+      durationLabel: plan.durationDays === 0 ? "1分钟" : `${plan.durationDays}天`,
     })),
     positions: toPaginationResult(
       positions.map((position) => ({
         id: position.id,
         amount: Number(position.amount),
         durationDays: position.durationDays,
+        durationLabel: position.durationDays === 0 ? "1分钟" : `${position.durationDays}天`,
+        releaseRatioPercent: position.releaseRatioBps / 100,
+        expectedReleasePoints: Math.floor(
+          Number(position.amount) * (position.releaseRatioBps / 10000),
+        ),
         status: position.status,
         startAt: position.startAt.toISOString(),
         endAt: position.endAt?.toISOString() ?? null,
@@ -180,7 +197,7 @@ export async function getUserLocksOverview(
 
 export async function createPointsLock(input: {
   userId: string;
-  durationDays: 30 | 90 | 180;
+  durationDays: 0 | 30 | 90 | 180;
   amount: number;
 }) {
   await ensureDefaultLockPlans();
@@ -215,7 +232,10 @@ export async function createPointsLock(input: {
 
     const nextBalance = user.pointsBalance - input.amount;
     const startAt = new Date();
-    const endAt = new Date(startAt.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
+    const endAt =
+      input.durationDays === 0
+        ? new Date(startAt.getTime() + 60 * 1000)
+        : new Date(startAt.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
 
     await tx.user.update({
       where: { id: user.id },
@@ -243,7 +263,10 @@ export async function createPointsLock(input: {
         change: -input.amount,
         balanceAfter: nextBalance,
         type: PointLogType.SYSTEM_ADJUST,
-        reason: `积分锁仓：${input.durationDays}天`,
+        reason:
+          input.durationDays === 0
+            ? "积分锁仓：1分钟测试锁仓"
+            : `积分锁仓：${input.durationDays}天`,
         operatorLabel: "system",
       },
     });

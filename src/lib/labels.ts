@@ -66,3 +66,7 @@ export function getAnnouncementStatusLabel(status: string) {
       return status;
   }
 }
+
+export function formatReleaseRatioPercent(value: number) {
+  return `${value}%`;
+}

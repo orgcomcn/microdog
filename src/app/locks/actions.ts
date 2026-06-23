@@ -25,7 +25,7 @@ export async function createPointsLockAction(formData: FormData) {
   const durationDays = Number.parseInt(
     readRequiredString(formData, "durationDays", "锁仓周期"),
     10,
-  ) as 30 | 90 | 180;
+  ) as 0 | 30 | 90 | 180;
   const amount = Number.parseInt(
     readRequiredString(formData, "amount", "锁仓积分"),
     10,

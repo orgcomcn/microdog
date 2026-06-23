@@ -22,7 +22,7 @@ import {
   deleteAdminPrediction,
   updateAdminPrediction,
 } from "@/modules/admin/prediction-service";
-import { updateLockPlanConfig } from "@/modules/admin/lock-service";
+import { deleteLockPlanConfig, updateLockPlanConfig } from "@/modules/admin/lock-service";
 import { applyAdminPointAdjustment } from "@/modules/admin/points-service";
 import { updateAdminSystemConfig } from "@/modules/admin/settings-service";
 import {
@@ -274,15 +274,25 @@ export async function updateLockPlanAction(formData: FormData) {
   await getAdminSessionOrThrow();
 
   const id = readString(formData, "id");
+  const releaseRatioPercent = readInt(formData, "releaseRatioBps", "释放比例");
 
   await updateLockPlanConfig({
     id: id || undefined,
     name: readRequiredString(formData, "name", "方案名称"),
     durationDays: readInt(formData, "durationDays", "锁仓天数"),
-    releaseRatioBps: readInt(formData, "releaseRatioBps", "释放比例"),
+    releaseRatioBps: releaseRatioPercent * 100,
     isActive: String(formData.get("isActive") ?? "") === "on",
     sortOrder: readInt(formData, "sortOrder", "排序"),
   });
+
+  revalidatePath("/admin/locks");
+  revalidatePath("/admin/settings");
+}
+
+export async function deleteLockPlanAction(formData: FormData) {
+  await getAdminSessionOrThrow();
+
+  await deleteLockPlanConfig(readRequiredString(formData, "id", "方案 ID"));
 
   revalidatePath("/admin/locks");
   revalidatePath("/admin/settings");

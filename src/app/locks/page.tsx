@@ -1,7 +1,11 @@
 import { PageShell } from "@/components/layout/page-shell";
 import { findSessionUser } from "@/lib/auth";
 import { formatShanghaiDateTime } from "@/lib/datetime";
-import { getLockStatusLabel, getPointLogTypeLabel } from "@/lib/labels";
+import {
+  formatReleaseRatioPercent,
+  getLockStatusLabel,
+  getPointLogTypeLabel,
+} from "@/lib/labels";
 import { getUserLocksOverview } from "@/modules/locks/service";
 
 import { createPointsLockAction } from "./actions";
@@ -49,9 +53,6 @@ export default async function LocksPage({
               <div className="mt-4 text-4xl font-semibold text-white">
                 {overview.user.pointsBalance}
               </div>
-              <p className="mt-3 text-sm leading-7 text-white/58">
-                积分唯一用途是锁仓。锁仓后对应积分会被冻结，到期自动返还。
-              </p>
             </article>
 
             <article className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.9)_0%,rgba(5,10,25,0.86)_100%)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.26)] backdrop-blur-xl">
@@ -69,7 +70,7 @@ export default async function LocksPage({
                   >
                     {overview.plans.map((plan) => (
                       <option key={plan.id} value={plan.durationDays}>
-                        {plan.durationDays} 天
+                        {plan.durationLabel} / 到期返还 {formatReleaseRatioPercent(plan.releaseRatioPercent)}
                       </option>
                     ))}
                   </select>
@@ -89,6 +90,10 @@ export default async function LocksPage({
 
                 <LockSubmitButton />
               </form>
+
+              <div className="mt-4 rounded-[20px] border border-cyan-300/16 bg-cyan-300/8 px-4 py-4 text-sm text-cyan-100/88">
+                锁仓返还说明：到期返还积分 = 锁仓积分 x 释放比例。
+              </div>
             </article>
           </section>
 
@@ -111,7 +116,7 @@ export default async function LocksPage({
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="text-sm font-semibold text-white">
-                          {position.durationDays} 天 / {position.amount} 积分
+                          {position.durationLabel} / {position.amount} 积分
                         </div>
                         <div className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-white/72">
                           {getLockStatusLabel(position.status)}
@@ -120,6 +125,8 @@ export default async function LocksPage({
                       <div className="mt-3 grid gap-2 text-sm text-white/58 sm:grid-cols-2">
                         <div>开始时间：{formatShanghaiDateTime(position.startAt)}</div>
                         <div>到期时间：{position.endAt ? formatShanghaiDateTime(position.endAt) : "-"}</div>
+                        <div>释放比例：{formatReleaseRatioPercent(position.releaseRatioPercent)}</div>
+                        <div>到期返还：{position.expectedReleasePoints} 积分</div>
                       </div>
                     </div>
                   ))

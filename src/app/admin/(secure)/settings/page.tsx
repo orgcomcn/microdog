@@ -7,7 +7,7 @@ import {
   AdminInput,
   AdminSectionTitle,
 } from "@/app/admin/_components/admin-form";
-import { updateLockPlanAction, updateSystemConfigAction } from "@/app/admin/actions";
+import { deleteLockPlanAction, updateLockPlanAction, updateSystemConfigAction } from "@/app/admin/actions";
 import { getAdminLocks } from "@/modules/admin/lock-service";
 import { getAdminSystemConfig } from "@/modules/admin/settings-service";
 
@@ -56,8 +56,8 @@ export default async function AdminSettingsPage() {
             <AdminField label="锁仓天数">
               <AdminInput name="durationDays" type="number" required />
             </AdminField>
-            <AdminField label="释放比例，10000 = 100%">
-              <AdminInput name="releaseRatioBps" type="number" defaultValue={10000} required />
+            <AdminField label="释放比例（%）">
+              <AdminInput name="releaseRatioBps" type="number" defaultValue={100} required />
             </AdminField>
             <AdminField label="排序">
               <AdminInput name="sortOrder" type="number" defaultValue={locks.plans.length * 10 + 10} required />
@@ -70,6 +70,30 @@ export default async function AdminSettingsPage() {
               新增锁仓方案
             </button>
           </form>
+          <div className="mt-6 space-y-3">
+            {locks.plans.map((plan) => (
+              <div
+                key={plan.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-white">{plan.name}</div>
+                  <div className="mt-1 text-xs text-white/58">
+                    {plan.durationDays === 0 ? "1分钟测试" : `${plan.durationDays} 天`} / {plan.releaseRatioPercent}% / 排序 {plan.sortOrder}
+                  </div>
+                </div>
+                <form action={deleteLockPlanAction}>
+                  <input type="hidden" name="id" value={plan.id} />
+                  <button
+                    type="submit"
+                    className="h-10 rounded-xl border border-rose-400/24 bg-rose-400/10 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-400/18"
+                  >
+                    删除
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
         </AdminFormSection>
       </section>
     </AdminPageShell>

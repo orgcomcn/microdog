@@ -102,7 +102,7 @@ export default async function AdminPointsPage({
 
       <AdminTableCard>
         <AdminTableToolbar>
-          <form className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_200px_auto]">
+          <form className="grid flex-1 items-end gap-4 lg:grid-cols-[minmax(0,1fr)_200px_120px]">
             <AdminField label="搜索流水">
               <AdminInput
                 name="keyword"
@@ -123,7 +123,7 @@ export default async function AdminPointsPage({
             </AdminField>
             <button
               type="submit"
-              className="h-11 rounded-2xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
+              className="h-11 w-full rounded-2xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
             >
               查询
             </button>

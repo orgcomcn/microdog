@@ -18,7 +18,7 @@ export default async function PointsPage({
   return (
     <PageShell
       title="积分系统"
-      description="注册奖励 100 积分；邀请成功后，邀请人和被邀请人各得 100 积分。积分唯一用途是锁仓。"
+      description="注册奖励 100 积分；邀请成功后，邀请人和被邀请人各得 100 积分。"
       badge="Points"
     >
       {!user || !overview ? (

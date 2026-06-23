@@ -19,9 +19,9 @@ import {
   AdminTh,
   AdminTr,
 } from "@/app/admin/_components/admin-table";
-import { updateLockPlanAction } from "@/app/admin/actions";
+import { deleteLockPlanAction, updateLockPlanAction } from "@/app/admin/actions";
 import { formatShanghaiDateTime } from "@/lib/datetime";
-import { getLockStatusLabel } from "@/lib/labels";
+import { formatReleaseRatioPercent, getLockStatusLabel } from "@/lib/labels";
 import { getAdminLocks } from "@/modules/admin/lock-service";
 
 export default async function AdminLocksPage({
@@ -53,35 +53,46 @@ export default async function AdminLocksPage({
 
           <div className="mt-5 space-y-4">
             {plans.map((plan) => (
-              <form key={plan.id} action={updateLockPlanAction} className="space-y-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
-                <input type="hidden" name="id" value={plan.id} />
-                <AdminField label="方案名称">
-                  <AdminInput name="name" type="text" defaultValue={plan.name} required />
-                </AdminField>
-                <AdminField label="锁仓天数">
-                  <AdminInput name="durationDays" type="number" defaultValue={plan.durationDays} required />
-                </AdminField>
-                <AdminField label="释放比例">
-                  <AdminInput name="releaseRatioBps" type="number" defaultValue={plan.releaseRatioBps} required />
-                </AdminField>
-                <AdminField label="排序">
-                  <AdminInput name="sortOrder" type="number" defaultValue={plan.sortOrder} required />
-                </AdminField>
-                <AdminCheckbox name="isActive" defaultChecked={plan.isActive} label="启用方案" />
-                <button
-                  type="submit"
-                  className="h-10 w-full rounded-xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
-                >
-                  保存方案
-                </button>
-              </form>
+              <div key={plan.id} className="space-y-3 rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                <form action={updateLockPlanAction} className="space-y-3">
+                  <input type="hidden" name="id" value={plan.id} />
+                  <AdminField label="方案名称">
+                    <AdminInput name="name" type="text" defaultValue={plan.name} required />
+                  </AdminField>
+                  <AdminField label="锁仓天数">
+                    <AdminInput name="durationDays" type="number" defaultValue={plan.durationDays} required />
+                  </AdminField>
+                  <AdminField label="释放比例">
+                    <AdminInput name="releaseRatioBps" type="number" defaultValue={plan.releaseRatioPercent} required />
+                  </AdminField>
+                  <AdminField label="排序">
+                    <AdminInput name="sortOrder" type="number" defaultValue={plan.sortOrder} required />
+                  </AdminField>
+                  <AdminCheckbox name="isActive" defaultChecked={plan.isActive} label="启用方案" />
+                  <button
+                    type="submit"
+                    className="h-10 w-full rounded-xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
+                  >
+                    保存方案
+                  </button>
+                </form>
+                <form action={deleteLockPlanAction}>
+                  <input type="hidden" name="id" value={plan.id} />
+                  <button
+                    type="submit"
+                    className="h-10 w-full rounded-xl border border-rose-400/24 bg-rose-400/10 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-400/18"
+                  >
+                    删除方案
+                  </button>
+                </form>
+              </div>
             ))}
           </div>
         </article>
 
         <AdminTableCard className="mt-0">
           <AdminTableToolbar>
-            <form className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_180px_auto]">
+            <form className="grid flex-1 items-end gap-4 lg:grid-cols-[minmax(0,1fr)_180px_120px]">
               <AdminField label="搜索锁仓">
                 <AdminInput
                   name="keyword"
@@ -98,7 +109,7 @@ export default async function AdminLocksPage({
               </AdminField>
               <button
                 type="submit"
-                className="h-11 rounded-2xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
+                className="h-11 w-full rounded-2xl bg-cyan-400/16 px-4 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/22"
               >
                 查询
               </button>
@@ -110,7 +121,7 @@ export default async function AdminLocksPage({
               <thead>
                 <tr>
                   <AdminTh>用户</AdminTh>
-                  <AdminTh>状态</AdminTh>
+                  <AdminTh className="min-w-[120px]">状态</AdminTh>
                   <AdminTh>资产</AdminTh>
                   <AdminTh>数量</AdminTh>
                   <AdminTh>期限</AdminTh>
@@ -133,7 +144,7 @@ export default async function AdminLocksPage({
                         <div className="font-semibold text-white">{position.uid ?? "-"}</div>
                         <div className="mt-1 text-xs text-white/52">{position.walletAddress}</div>
                       </AdminTd>
-                      <AdminTd>
+                      <AdminTd className="min-w-[120px]">
                         <AdminStatusBadge tone={position.status === "ACTIVE" ? "success" : "default"}>
                           {getLockStatusLabel(position.status)}
                         </AdminStatusBadge>
@@ -141,7 +152,7 @@ export default async function AdminLocksPage({
                       <AdminTd>{position.assetSymbol}</AdminTd>
                       <AdminTd>{position.amount}</AdminTd>
                       <AdminTd>{position.durationDays} 天</AdminTd>
-                      <AdminTd>{position.releaseRatioBps / 100}%</AdminTd>
+                      <AdminTd>{formatReleaseRatioPercent(position.releaseRatioBps / 100)}</AdminTd>
                       <AdminTd>{formatShanghaiDateTime(position.startAt)}</AdminTd>
                       <AdminTd>{position.endAt ? formatShanghaiDateTime(position.endAt) : "-"}</AdminTd>
                     </AdminTr>

@@ -11,6 +11,13 @@ export async function ensureDefaultLockPlans() {
   await prisma.lockPlanConfig.createMany({
     data: [
       {
+        name: "1分钟测试锁仓",
+        durationDays: 0,
+        releaseRatioBps: 10000,
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
         name: "30天锁仓",
         durationDays: 30,
         releaseRatioBps: 10000,
@@ -115,6 +122,7 @@ export async function getAdminLocks(input?: {
     ),
     plans: plans.map((plan) => ({
       ...plan,
+      releaseRatioPercent: plan.releaseRatioBps / 100,
       createdAt: plan.createdAt.toISOString(),
       updatedAt: plan.updatedAt.toISOString(),
     })),
@@ -150,5 +158,29 @@ export async function updateLockPlanConfig(input: {
       isActive: input.isActive,
       sortOrder: input.sortOrder,
     },
+  });
+}
+
+export async function deleteLockPlanConfig(id: string) {
+  const plan = await prisma.lockPlanConfig.findUnique({
+    where: { id },
+  });
+
+  if (!plan) {
+    throw new Error("锁仓方案不存在。");
+  }
+
+  const relatedCount = await prisma.lockPosition.count({
+    where: {
+      durationDays: plan.durationDays,
+    },
+  });
+
+  if (relatedCount > 0) {
+    throw new Error("该锁仓方案已有关联锁仓记录，不能删除。");
+  }
+
+  await prisma.lockPlanConfig.delete({
+    where: { id },
   });
 }
