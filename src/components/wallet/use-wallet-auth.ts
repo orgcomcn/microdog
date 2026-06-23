@@ -1,19 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 
 export type WalletSessionUser = {
   id: string;
+  uid: string | null;
+  inviteCode: string | null;
   walletAddress: string;
   nickname: string | null;
   role: string;
+  createdAt: string;
+  invitedByUserId: string | null;
 };
 
 export type WalletSessionResponse = {
   authenticated: boolean;
   user: WalletSessionUser | null;
+};
+
+export type ReferralState = {
+  referralCode: string | null;
+  inviter: {
+    uid: string | null;
+    walletAddress: string;
+  } | null;
 };
 
 function normalizeWalletError(error: unknown) {
@@ -59,6 +72,8 @@ type UseWalletAuthOptions = {
 
 export function useWalletAuth(options?: UseWalletAuthOptions) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const { signMessageAsync } = useSignMessage();
@@ -70,6 +85,13 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
     options?.initialStatus ?? "连接钱包后可发起签名登录。",
   );
   const [session, setSession] = useState<WalletSessionResponse | null>(null);
+  const [referralState, setReferralState] = useState<ReferralState>({
+    referralCode: null,
+    inviter: null,
+  });
+
+  const initialStatus = options?.initialStatus ?? "连接钱包后可发起签名登录。";
+  const redirectTo = options?.redirectTo;
 
   const loadSession = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
@@ -89,7 +111,7 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
         if (result.data.authenticated && result.data.user) {
           setStatus(`已登录 ${shortenAddress(result.data.user.walletAddress)}`);
         } else if (!silent) {
-          setStatus(options?.initialStatus ?? "连接钱包后可发起签名登录。");
+          setStatus(initialStatus);
         }
 
         return result.data;
@@ -108,16 +130,106 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
         setHasLoadedSession(true);
       }
     },
-    [options?.initialStatus],
+    [initialStatus],
   );
+
+  const loadReferralState = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/referral", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const result = await readJsonResponse<{ data: ReferralState }>(
+        response,
+        "读取邀请关系失败",
+      );
+
+      if (response.ok) {
+        setReferralState(result.data);
+      }
+    } catch {
+      setReferralState({
+        referralCode: null,
+        inviter: null,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void loadSession({ silent: true });
+      void loadReferralState();
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [loadSession]);
+  }, [loadReferralState, loadSession]);
+
+  useEffect(() => {
+    const referralFromUrl = searchParams.get("ref");
+
+    if (!referralFromUrl || session?.authenticated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function captureReferralFromUrl() {
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      nextSearchParams.delete("ref");
+      const nextSearch = nextSearchParams.toString();
+      const nextUrl = (nextSearch ? `${pathname}?${nextSearch}` : pathname) as Route;
+
+      try {
+        const response = await fetch("/api/auth/referral", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ referralCode: referralFromUrl }),
+        });
+
+        const result = await readJsonResponse<{
+          data?: ReferralState;
+          message: string;
+        }>(response, "邀请链接处理失败");
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok || !result.data) {
+          setStatus(result.message || "邀请链接无效，将按普通注册继续。");
+          return;
+        }
+
+        setReferralState(result.data);
+        setStatus(
+          result.data.inviter
+            ? `已记录邀请关系：${shortenAddress(result.data.inviter.walletAddress)}`
+            : initialStatus,
+        );
+
+      } catch (error) {
+        if (!cancelled) {
+          setStatus(normalizeWalletError(error));
+        }
+      } finally {
+        if (!cancelled) {
+          router.replace(nextUrl);
+        }
+      }
+    }
+
+    void captureReferralFromUrl();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialStatus, pathname, router, searchParams, session?.authenticated]);
+
+  const triggerAutoLogin = useEffectEvent(() => {
+    void handleLogin();
+  });
 
   async function handleLogin() {
     if (!address) {
@@ -178,6 +290,7 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
       }
 
       setStatus("登录成功，正在同步状态...");
+      await loadReferralState();
       const currentSession = await loadSession();
 
       if (!currentSession?.authenticated) {
@@ -185,9 +298,9 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
         return;
       }
 
-      if (options?.redirectTo) {
+      if (redirectTo) {
         triggerNavigationTransition(() => {
-          router.push(options.redirectTo);
+          router.push(redirectTo as Route);
           router.refresh();
         });
       } else {
@@ -200,30 +313,12 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
     }
   }
 
-  async function handleLogout() {
-    setIsSubmitting(true);
-
-    try {
-      await fetch("/api/auth/session", {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      await loadSession();
-      disconnect();
-      setStatus("已退出登录。");
-      router.refresh();
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  const triggerAutoLogin = useEffectEvent(() => {
-    void handleLogin();
-  });
-
   useEffect(() => {
     if (!options?.autoLoginOnConnect) {
+      return;
+    }
+
+    if (searchParams.get("ref")) {
       return;
     }
 
@@ -263,18 +358,55 @@ export function useWalletAuth(options?: UseWalletAuthOptions) {
     isNavigating,
     isSubmitting,
     options?.autoLoginOnConnect,
+    searchParams,
     session?.authenticated,
     session?.user?.walletAddress,
   ]);
+
+  async function handleLogout() {
+    setIsSubmitting(true);
+
+    try {
+      await fetch("/api/auth/session", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      await loadSession();
+      disconnect();
+      setStatus("已退出登录。");
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function clearReferral() {
+    await fetch("/api/auth/referral", {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    setReferralState({
+      referralCode: null,
+      inviter: null,
+    });
+
+    if (!session?.authenticated) {
+      setStatus(initialStatus);
+    }
+  }
 
   return {
     address,
     isConnected,
     session,
+    referralState,
     status,
-    isPending: isSubmitting || isNavigating,
+    isPending: isSubmitting || isNavigating || !hasLoadedSession,
     handleLogin,
     handleLogout,
+    clearReferral,
     loadSession,
   };
 }

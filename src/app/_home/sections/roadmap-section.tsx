@@ -4,7 +4,7 @@ export function RoadmapSection() {
   return (
     <section
       id="roadmap"
-      className="mt-5 mb-8 rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.22)]"
+      className="mt-5 rounded-[32px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_70px_rgba(0,0,0,0.22)]"
     >
       <div className="text-xs font-semibold tracking-[0.24em] text-cyan-200/72 uppercase">
         平台路线图

@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 
 const AUTH_NONCE_COOKIE = "microdog_auth_nonce";
 const AUTH_SESSION_COOKIE = "microdog_session";
+const AUTH_REFERRAL_COOKIE = "microdog_referral_code";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const NONCE_TTL_SECONDS = 60 * 10;
+const REFERRAL_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex");
@@ -19,15 +21,19 @@ export function createSessionToken() {
   return randomBytes(32).toString("hex");
 }
 
-export async function setAuthNonceCookie(nonce: string) {
-  const cookieStore = await cookies();
-  cookieStore.set(AUTH_NONCE_COOKIE, nonce, {
+function buildCookieOptions(maxAge: number) {
+  return {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: NONCE_TTL_SECONDS,
-  });
+    maxAge,
+  };
+}
+
+export async function setAuthNonceCookie(nonce: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(AUTH_NONCE_COOKIE, nonce, buildCookieOptions(NONCE_TTL_SECONDS));
 }
 
 export async function getAuthNonceCookie() {
@@ -35,37 +41,38 @@ export async function getAuthNonceCookie() {
   return cookieStore.get(AUTH_NONCE_COOKIE)?.value ?? null;
 }
 
+export async function setReferralCookie(referralCode: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(
+    AUTH_REFERRAL_COOKIE,
+    normalizeReferralCode(referralCode),
+    buildCookieOptions(REFERRAL_TTL_SECONDS),
+  );
+}
+
+export async function getReferralCookie() {
+  const cookieStore = await cookies();
+  return cookieStore.get(AUTH_REFERRAL_COOKIE)?.value ?? null;
+}
+
 export async function clearAuthNonceCookie() {
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_NONCE_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
+  cookieStore.set(AUTH_NONCE_COOKIE, "", buildCookieOptions(0));
+}
+
+export async function clearReferralCookie() {
+  const cookieStore = await cookies();
+  cookieStore.set(AUTH_REFERRAL_COOKIE, "", buildCookieOptions(0));
 }
 
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_TTL_MS / 1000,
-  });
+  cookieStore.set(AUTH_SESSION_COOKIE, token, buildCookieOptions(SESSION_TTL_MS / 1000));
 }
 
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.set(AUTH_SESSION_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
+  cookieStore.set(AUTH_SESSION_COOKIE, "", buildCookieOptions(0));
 }
 
 export function buildWalletLoginMessage(address: string, nonce: string) {
@@ -94,7 +101,18 @@ export async function findSessionUser() {
   const tokenHash = sha256(rawToken);
   const session = await prisma.authSession.findUnique({
     where: { token: tokenHash },
-    include: { user: true },
+    include: {
+      user: {
+        include: {
+          invitedBy: {
+            select: {
+              uid: true,
+              walletAddress: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!session || session.expiresAt < new Date()) {
@@ -124,4 +142,8 @@ export async function persistUserSession(userId: string, walletAddress: string) 
   return {
     expiresAt: expiresAt.toISOString(),
   };
+}
+
+export function normalizeReferralCode(value: string) {
+  return value.trim().toUpperCase();
 }

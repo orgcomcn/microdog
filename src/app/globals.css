@@ -90,11 +90,22 @@
   }
 
   html {
-    @apply font-sans;
+    @apply h-full font-sans;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: #040714;
+    overscroll-behavior-x: none;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-full;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: #040714;
+    color: var(--foreground);
+    overscroll-behavior-y: none;
   }
 
   a {

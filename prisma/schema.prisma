@@ -17,17 +17,25 @@ enum LockStatus {
 }
 
 model User {
-  id             String      @id @default(cuid())
-  walletAddress  String      @unique
-  nickname       String?
-  avatar         String?
-  role           UserRole    @default(USER)
-  pointsBalance  Int         @default(0)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  pointsLedger   PointLog[]
-  lockPositions  LockPosition[]
-  authSessions   AuthSession[]
+  id              String      @id @default(cuid())
+  uid             String?     @unique
+  inviteCode      String?     @unique
+  walletAddress   String      @unique
+  nickname        String?
+  avatar          String?
+  role            UserRole    @default(USER)
+  pointsBalance   Int         @default(0)
+  invitedByUserId String?
+  referralBoundAt DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  invitedBy       User?       @relation("UserReferrals", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  referrals       User[]      @relation("UserReferrals")
+  pointsLedger    PointLog[]
+  lockPositions   LockPosition[]
+  authSessions    AuthSession[]
+
+  @@index([invitedByUserId, createdAt])
 }
 
 model AuthSession {

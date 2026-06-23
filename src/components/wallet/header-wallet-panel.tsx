@@ -1,7 +1,10 @@
 "use client";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Link from "next/link";
+import type { Route } from "next";
 import { CheckCircle2, ChevronDown, LoaderCircle, LogOut, ShieldCheck, Wallet } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { useWalletAuth } from "@/components/wallet/use-wallet-auth";
 
@@ -9,10 +12,12 @@ function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+const dashboardRoute = "/dashboard" as Route;
+
 export function HeaderWalletPanel() {
   const { address, session, status, isPending, handleLogin, handleLogout } = useWalletAuth({
+    initialStatus: "连接钱包后可签名登录",
     autoLoginOnConnect: true,
-    initialStatus: "连接钱包后自动完成签名认证",
   });
 
   const isAuthenticated = Boolean(session?.authenticated && session.user);
@@ -38,9 +43,8 @@ export function HeaderWalletPanel() {
           return (
             <div className="flex w-full max-w-[430px] flex-col items-end gap-1.5">
               <div className="flex w-full items-center justify-between gap-2 rounded-full border border-emerald-300/14 bg-[#0c1530]/92 px-2 py-2 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_0_24px_rgba(47,211,160,0.08)] backdrop-blur-xl">
-                <button
-                  type="button"
-                  onClick={openAccountModal}
+                <Link
+                  href={dashboardRoute}
                   className="group flex min-w-0 flex-1 items-center gap-2.5 rounded-full px-2 py-1.5 text-left transition hover:bg-white/[0.04]"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-400/[0.12] text-emerald-100 shadow-[0_0_16px_rgba(16,185,129,0.18)]">
@@ -56,10 +60,13 @@ export function HeaderWalletPanel() {
                     <div className="mt-0.5 truncate text-sm font-semibold text-white">
                       {shortenAddress(session.user.walletAddress)}
                     </div>
+                    <div className="mt-0.5 truncate text-[0.68rem] text-white/42">
+                      UID {session.user.uid ?? "待补齐"}
+                    </div>
                   </div>
 
                   <ChevronDown className="size-4 shrink-0 text-white/36 transition group-hover:text-white/64" />
-                </button>
+                </Link>
 
                 {chain ? (
                   <button

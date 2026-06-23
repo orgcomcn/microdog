@@ -1,4 +1,9 @@
-import { clearAuthNonceCookie, getAuthNonceCookie } from "@/lib/auth";
+import {
+  clearAuthNonceCookie,
+  clearReferralCookie,
+  getAuthNonceCookie,
+  getReferralCookie,
+} from "@/lib/auth";
 import { ok, fail } from "@/lib/api";
 import { createWalletSession } from "@/modules/auth/service";
 import { verifyWalletSignature } from "@/modules/wallet/service";
@@ -42,9 +47,12 @@ export async function POST(request: Request) {
       return fail("Wallet signature verification failed.", 401);
     }
 
-    await clearAuthNonceCookie();
+    const referralCode = await getReferralCookie();
 
-    return ok(await createWalletSession(normalizedAddress), "Wallet login succeeded.");
+    await clearAuthNonceCookie();
+    await clearReferralCookie();
+
+    return ok(await createWalletSession(normalizedAddress, referralCode), "Wallet login succeeded.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Wallet login failed.";
     return fail(message, 500);

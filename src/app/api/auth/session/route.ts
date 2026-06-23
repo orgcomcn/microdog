@@ -10,9 +10,13 @@ export async function GET() {
       user: user
         ? {
             id: user.id,
+            uid: user.uid,
+            inviteCode: user.inviteCode,
             walletAddress: user.walletAddress,
             nickname: user.nickname,
             role: user.role,
+            createdAt: user.createdAt.toISOString(),
+            invitedByUserId: user.invitedByUserId,
           }
         : null,
     });
