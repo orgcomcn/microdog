@@ -1,14 +1,3 @@
-export const homeNavItems = [
-  { label: "项目介绍", href: "#project" },
-  { label: "公告栏", href: "#announcements" },
-  { label: "MicroDOGE介绍", href: "#microdoge" },
-  { label: "AI功能介绍", href: "#ai-features" },
-  { label: "平台路线图", href: "#roadmap" },
-] satisfies ReadonlyArray<{
-  label: string;
-  href: `#${string}`;
-}>;
-
 export const microDogeWays = [
   "注册奖励",
   "邀请奖励",

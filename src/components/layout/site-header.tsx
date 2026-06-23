@@ -12,7 +12,6 @@ const defaultNavItems = [
   { href: "/points" as Route, label: "积分" },
   { href: "/locks" as Route, label: "锁仓" },
   { href: "/dashboard" as Route, label: "个人中心" },
-  { href: "/admin" as Route, label: "后台" },
 ];
 
 type HeaderNavItem = {
