@@ -29,8 +29,8 @@ export function SiteHeader({
   subtitle = "AI Digital Asset Platform",
 }: SiteHeaderProps) {
   return (
-    <div className="sticky top-0 z-40 pt-4">
-      <header className="rounded-[28px] border border-white/10 bg-[#09112c]/78 px-4 py-4 shadow-[0_18px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-5 lg:px-6">
+    <div className="relative z-20 pb-1 pt-4">
+      <header className="rounded-[28px] border border-white/10 bg-[#09112c]/78 px-4 py-4 shadow-[0_18px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-5 lg:px-7 2xl:px-8">
         <div className="grid gap-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-10 w-10 overflow-hidden rounded-2xl border border-white/15 bg-white/6 shadow-[0_0_30px_rgba(107,114,255,0.3)]">

@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className="h-full antialiased">
+    <html lang="zh-CN" className="antialiased">
       <body className="min-h-screen bg-[#040714] text-white">
         <AppProviders>{children}</AppProviders>
       </body>

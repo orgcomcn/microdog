@@ -6,7 +6,7 @@ type AppPageHeaderProps = {
 
 export function AppPageHeader({ title, description, badge }: AppPageHeaderProps) {
   return (
-    <section className="mt-5 overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.92)_0%,rgba(5,10,25,0.9)_100%)] px-5 py-8 shadow-[0_28px_90px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:px-8 sm:py-10 lg:px-10">
+    <section className="mt-5 overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,18,44,0.92)_0%,rgba(5,10,25,0.9)_100%)] px-5 py-8 shadow-[0_28px_90px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:px-8 sm:py-10 lg:px-10 2xl:px-12">
       <div className="space-y-4">
         {badge ? (
           <div className="inline-flex rounded-full border border-cyan-300/24 bg-cyan-300/10 px-4 py-2 text-xs font-semibold tracking-[0.22em] text-cyan-100 uppercase">
