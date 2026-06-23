@@ -84,11 +84,9 @@ export default async function DashboardPage() {
               Member Status
             </div>
             <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white">
-              当前还没有有效登录会话
+              未登录，请先连接钱包
             </h1>
-            <p className="mt-3 max-w-3xl text-base leading-8 text-white/62">
-              请先连接钱包。连接成功后会自动发起签名认证；如果你是通过邀请链接进入，这一步也会自动完成推荐关系绑定。
-            </p>
+            
           </div>
         )}
       </section>
