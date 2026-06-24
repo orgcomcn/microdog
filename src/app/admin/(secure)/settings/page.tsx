@@ -1,4 +1,5 @@
 import { AdminPageShell } from "@/app/admin/_components/admin-page-shell";
+import { AdminDateTimeField } from "@/app/admin/_components/admin-date-time-field";
 import { AdminTopbar } from "@/app/admin/_components/admin-topbar";
 import {
   AdminCheckbox,
@@ -7,7 +8,13 @@ import {
   AdminInput,
   AdminSectionTitle,
 } from "@/app/admin/_components/admin-form";
-import { deleteLockPlanAction, updateLockPlanAction, updateSystemConfigAction } from "@/app/admin/actions";
+import {
+  deleteLockPlanAction,
+  updateAssetPoolConfigAction,
+  updateLockPlanAction,
+  updateSystemConfigAction,
+} from "@/app/admin/actions";
+import { toShanghaiDateTimeLocalValue } from "@/lib/datetime";
 import { getAdminLocks } from "@/modules/admin/lock-service";
 import { getAdminSystemConfig } from "@/modules/admin/settings-service";
 
@@ -20,7 +27,7 @@ export default async function AdminSettingsPage() {
   return (
     <AdminPageShell
       title="后台 / 系统设置"
-      description="统一管理注册送分、邀请奖励、锁仓周期与 AI 每日提问次数等运营参数。"
+      description="统一管理注册送分、邀请奖励、平台资产池展示、锁仓周期与 AI 每日提问次数等运营参数。"
       badge="Admin / Settings"
     >
       <AdminTopbar />
@@ -48,6 +55,37 @@ export default async function AdminSettingsPage() {
         </AdminFormSection>
 
         <AdminFormSection className="mt-0">
+          <AdminSectionTitle>平台资产池展示</AdminSectionTitle>
+          <form action={updateAssetPoolConfigAction} className="mt-5 grid gap-4">
+            <AdminField label="BTC 数量" hint="支持小数，前台按千分位展示。">
+              <AdminInput name="btcAmount" type="text" defaultValue={config.btcAmount} required />
+            </AdminField>
+            <AdminField label="ETH 数量" hint="支持小数，前台按千分位展示。">
+              <AdminInput name="ethAmount" type="text" defaultValue={config.ethAmount} required />
+            </AdminField>
+            <AdminField label="MicroDOGE 数量" hint="支持大额整数或小数。">
+              <AdminInput name="microdogAmount" type="text" defaultValue={config.microdogAmount} required />
+            </AdminField>
+            <AdminField label="TVL" hint="仅填写数字，前台自动补 `$` 和千分位。">
+              <AdminInput name="tvl" type="text" defaultValue={config.tvl} required />
+            </AdminField>
+            <AdminField label="更新时间">
+              <AdminDateTimeField
+                name="assetPoolUpdatedAt"
+                defaultValue={toShanghaiDateTimeLocalValue(config.assetPoolUpdatedAt)}
+                required
+              />
+            </AdminField>
+            <button
+              type="submit"
+              className="h-11 rounded-2xl bg-[linear-gradient(90deg,#22c55e_0%,#14b8a6_100%)] px-4 text-sm font-medium text-white transition hover:opacity-95"
+            >
+              保存资产池配置
+            </button>
+          </form>
+        </AdminFormSection>
+
+        <AdminFormSection className="mt-0 xl:col-span-2">
           <AdminSectionTitle>快速新增锁仓方案</AdminSectionTitle>
           <form action={updateLockPlanAction} className="mt-5 grid gap-4">
             <AdminField label="方案名称">

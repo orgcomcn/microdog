@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
+import { Prisma } from "@prisma/client";
 import {
   AnnouncementStatus,
   PredictionDirection,
@@ -24,11 +25,12 @@ import {
 } from "@/modules/admin/prediction-service";
 import { deleteLockPlanConfig, updateLockPlanConfig } from "@/modules/admin/lock-service";
 import { applyAdminPointAdjustment } from "@/modules/admin/points-service";
-import { updateAdminSystemConfig } from "@/modules/admin/settings-service";
+import { updateAdminAssetPoolConfig, updateAdminSystemConfig } from "@/modules/admin/settings-service";
 import {
   updateAdminUserRole,
   updateAdminUserStatus,
 } from "@/modules/admin/user-service";
+import { parseShanghaiDateTimeLocal } from "@/lib/datetime";
 
 export type AdminLoginActionState = {
   error: string | null;
@@ -57,6 +59,16 @@ function readInt(formData: FormData, key: string, label: string) {
   }
 
   return value;
+}
+
+function readDecimalString(formData: FormData, key: string, label: string) {
+  const raw = readRequiredString(formData, key, label);
+
+  try {
+    return new Prisma.Decimal(raw).toString();
+  } catch {
+    throw new Error(`${label}格式不正确。`);
+  }
 }
 
 function readEnumValue<T extends string>(
@@ -307,6 +319,24 @@ export async function updateSystemConfigAction(formData: FormData) {
     aiDailyQuestionLimit: readInt(formData, "aiDailyQuestionLimit", "AI 每日提问次数"),
   });
 
+  revalidatePath("/admin");
+  revalidatePath("/admin/settings");
+}
+
+export async function updateAssetPoolConfigAction(formData: FormData) {
+  await getAdminSessionOrThrow();
+
+  await updateAdminAssetPoolConfig({
+    btcAmount: readDecimalString(formData, "btcAmount", "BTC 数量"),
+    ethAmount: readDecimalString(formData, "ethAmount", "ETH 数量"),
+    microdogAmount: readDecimalString(formData, "microdogAmount", "MicroDOGE 数量"),
+    tvl: readDecimalString(formData, "tvl", "TVL"),
+    assetPoolUpdatedAt: parseShanghaiDateTimeLocal(
+      readRequiredString(formData, "assetPoolUpdatedAt", "更新时间"),
+    ),
+  });
+
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/settings");
 }

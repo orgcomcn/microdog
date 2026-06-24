@@ -175,6 +175,11 @@ model SystemConfig {
   registerRewardPoints Int      @default(100)
   inviteRewardPoints   Int      @default(50)
   aiDailyQuestionLimit Int      @default(10)
+  btcAmount            Decimal  @default(0) @db.Decimal(24, 8)
+  ethAmount            Decimal  @default(0) @db.Decimal(24, 8)
+  microdogAmount       Decimal  @default(0) @db.Decimal(30, 8)
+  tvl                  Decimal  @default(0) @db.Decimal(24, 2)
+  assetPoolUpdatedAt   DateTime @default(now())
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

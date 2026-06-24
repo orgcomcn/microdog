@@ -6,6 +6,7 @@ import { HeaderWalletPanel } from "@/components/wallet/header-wallet-panel";
 
 const defaultNavItems = [
   { href: "/" as Route, label: "首页" },
+  { href: "/asset-pool" as Route, label: "资产池" },
   { href: "/market" as Route, label: "行情" },
   { href: "/ai/predictions" as Route, label: "AI预测" },
   { href: "/points" as Route, label: "积分" },
