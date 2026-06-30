@@ -2,6 +2,8 @@ import { PageShell } from "@/components/layout/page-shell";
 import { formatShanghaiDateTime } from "@/lib/datetime";
 import { getPublishedPredictionsForFront } from "@/modules/admin/prediction-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function PredictionsPage() {
   const predictions = await getPublishedPredictionsForFront();
 

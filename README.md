@@ -167,33 +167,46 @@ admin123
 
 ## 服务器部署
 
-### 推荐方式：Docker 镜像部署
+服务器推荐只用 Docker Compose 部署。生产 compose 文件是 [`docker-compose.prod.yml`](./docker-compose.prod.yml)，会同时启动 PostgreSQL、Next.js 应用和 Caddy。Caddy 会自动申请 HTTPS 证书并自动续期；应用容器启动时会自动执行 `npx prisma migrate deploy`。
 
-适合 Linux 服务器、云主机或宝塔/Nginx 反代场景。当前仓库已经有生产 [`Dockerfile`](./Dockerfile)。
+### 1. 服务器准备
 
-#### 1. 准备服务器环境
+服务器需要安装：
 
-- 安装 Docker
-- 准备一个 PostgreSQL 实例
-- 确保服务器能访问 PostgreSQL
-- 如果要对外提供 HTTPS，准备 Nginx 或 Caddy 反代到应用的 `3000` 端口
+- Git
+- Docker
+- Docker Compose
 
-#### 2. 准备生产环境变量
+域名要先解析到服务器公网 IP，并且服务器安全组/防火墙要放行 `80` 和 `443` 端口。
 
-在服务器项目目录里复制模板：
+### 2. 拉代码
 
 ```bash
-cp .env.example .env.production
+cd /www/wwwroot
+git clone <你的仓库地址> MicroDOG
+cd MicroDOG
 ```
 
-至少改这几个值：
+### 3. 配置环境变量
+
+```bash
+cp .env.production.example .env.production
+nano .env.production
+```
+
+Docker 部署时，`DATABASE_URL` 里的数据库主机写 `db`，和 compose 服务名保持一致：
 
 ```env
-DATABASE_URL="postgresql://user:password@db-host:5432/microdog_v1?schema=public"
+POSTGRES_DB="microdog_v1"
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD="换成强密码"
+APP_DOMAIN="your-domain.com"
+ACME_EMAIL="admin@your-domain.com"
+DATABASE_URL="postgresql://postgres:换成强密码@db:5432/microdog_v1?schema=public"
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID="your-walletconnect-project-id"
 NEXT_PUBLIC_APP_NAME="MicroDOG V1"
-ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="admin123"
+ADMIN_USERNAME="your-admin"
+ADMIN_PASSWORD="your-strong-password"
 COINGECKO_API_KEY="your-coingecko-demo-or-pro-key"
 COINGECKO_API_BASE_URL="https://api.coingecko.com/api/v3"
 MARKET_MICRODOGE_COINGECKO_ID=""
@@ -201,111 +214,41 @@ MARKET_MICRODOGE_PLATFORM_ID=""
 MARKET_MICRODOGE_CONTRACT_ADDRESS=""
 ```
 
-注意：
-
-- 如果数据库不在应用容器内部，`DATABASE_URL` 里的主机名必须写真实可达地址，不能机械地保留 `localhost`。
-- `NEXT_PUBLIC_*` 会写进前端 bundle，所以它们不仅要在运行时可用，也要在构建镜像时传进去。
-
-#### 3. 导出环境变量并构建镜像
-
-在 `bash` / `zsh` 里执行：
+### 4. 启动
 
 ```bash
-set -a
-source .env.production
-set +a
-docker build \
-  -t microdog-v1 \
-  --build-arg DATABASE_URL \
-  --build-arg NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID \
-  --build-arg NEXT_PUBLIC_APP_NAME \
-  .
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
-说明：
-
-- `COINGECKO_API_KEY`、`MARKET_MICRODOGE_*` 这些运行时环境变量不需要作为 `build-arg` 传入，因为它们只在服务端 API 路由里使用。
-- 如果你未来切到 CoinGecko Pro，可以把 `COINGECKO_API_BASE_URL` 改成对应的 Pro 域名。
-
-#### 4. 初始化数据库
-
-当前仓库还没有提交正式的 `prisma/migrations` 目录，因此首发部署建议先用 `db push` 初始化表结构：
+查看日志：
 
 ```bash
-docker run --rm --env-file .env.production microdog-v1 npx prisma db push
+docker compose --env-file .env.production -f docker-compose.prod.yml logs -f app
 ```
 
-如果服务器之前已经跑过旧版结构，这一步同样要重新执行一次，把新增的后台表同步进去。
-
-后续如果你开始维护 `prisma/migrations`，把这一步切换成：
+检查服务：
 
 ```bash
-docker run --rm --env-file .env.production microdog-v1 npx prisma migrate deploy
+curl https://your-domain.com/api/health
 ```
 
-#### 5. 启动应用容器
+### 5. 更新代码
 
 ```bash
-docker run -d \
-  --name microdog-app \
-  --restart unless-stopped \
-  -p 3000:3000 \
-  --env-file .env.production \
-  microdog-v1
-```
-
-#### 6. 验证服务
-
-```bash
-curl http://127.0.0.1:3000/api/health
-```
-
-如果你前面接了 Nginx / Caddy，再把域名反代到 `127.0.0.1:3000` 即可。
-
-#### 7. 发布更新
-
-代码更新后的最小发布流程：
-
-```bash
+cd /www/wwwroot/MicroDOG
 git pull
-set -a
-source .env.production
-set +a
-docker build \
-  -t microdog-v1 \
-  --build-arg DATABASE_URL \
-  --build-arg NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID \
-  --build-arg NEXT_PUBLIC_APP_NAME \
-  .
-docker run --rm --env-file .env.production microdog-v1 npx prisma db push
-docker rm -f microdog-app
-docker run -d \
-  --name microdog-app \
-  --restart unless-stopped \
-  -p 3000:3000 \
-  --env-file .env.production \
-  microdog-v1
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
 
-如果将来接入正式 migration，把更新流程里的 `db push` 换成 `migrate deploy`。
+### HTTPS 证书
 
-### 备选方式：Node 原生部署
+不需要手动申请证书。Caddy 会根据 `APP_DOMAIN` 自动申请 Let’s Encrypt 证书，并在证书到期前自动续期。证书数据保存在 Docker volume `caddy_data` 里，更新代码或重建容器不会丢。
 
-如果你不想用 Docker，也可以直接在服务器装 Node.js 22 和 PostgreSQL。
+### 后台登录入口
 
-```bash
-cp .env.example .env.production
-npm ci
-set -a
-source .env.production
-set +a
-npx prisma generate
-npx prisma db push
-npm run build
-PORT=3000 npm run start
+```text
+https://your-domain.com/admin/login
 ```
-
-这种方式建议再配 `pm2` 或 `systemd` 守护进程，并用 Nginx/Caddy 做反向代理。
 
 ## 常用命令
 
@@ -322,6 +265,21 @@ npm run dev
 # 生成 Prisma Client
 npx prisma generate
 
-# 推送 schema 到数据库
+# 本地开发创建/应用 migration
+npm run prisma:migrate
+
+# 服务器应用已提交的 migration
+npx prisma migrate deploy
+
+# 快速推送 schema 到本地开发库
 npx prisma db push
+
+# Docker 生产启动/更新
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+
+# Docker 查看应用日志
+docker compose --env-file .env.production -f docker-compose.prod.yml logs -f app
+
+# Docker 查看 HTTPS / Caddy 日志
+docker compose --env-file .env.production -f docker-compose.prod.yml logs -f caddy
 ```
