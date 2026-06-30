@@ -15,7 +15,7 @@ export async function loginAdmin(username: string, password: string) {
 }
 
 export async function getAdminSessionOrThrow() {
-  const session = await findAdminSession();
+  const session = await findAdminSession({ clearInvalidCookie: true });
 
   if (!session) {
     throw new Error("管理员未登录。");

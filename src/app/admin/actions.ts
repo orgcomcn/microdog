@@ -161,7 +161,7 @@ export async function createPredictionAction(formData: FormData) {
     direction: readEnumValue(formData, "direction", "方向", ["UP", "DOWN"] as const) as PredictionDirection,
     targetPrice: readRequiredString(formData, "targetPrice", "目标价格"),
     publishAt: readRequiredString(formData, "publishAt", "发布时间"),
-    effectiveUntil: readRequiredString(formData, "effectiveUntil", "有效时间"),
+    effectiveUntil: readString(formData, "effectiveUntil"),
     summary: readString(formData, "summary"),
     status: readEnumValue(
       formData,
@@ -186,7 +186,7 @@ export async function updatePredictionAction(formData: FormData) {
     direction: readEnumValue(formData, "direction", "方向", ["UP", "DOWN"] as const) as PredictionDirection,
     targetPrice: readRequiredString(formData, "targetPrice", "目标价格"),
     publishAt: readRequiredString(formData, "publishAt", "发布时间"),
-    effectiveUntil: readRequiredString(formData, "effectiveUntil", "有效时间"),
+    effectiveUntil: readString(formData, "effectiveUntil"),
     summary: readString(formData, "summary"),
     status: readEnumValue(
       formData,

@@ -3,7 +3,7 @@ import { fail, ok } from "@/lib/api";
 
 export async function GET() {
   try {
-    const user = await findSessionUser();
+    const user = await findSessionUser({ clearInvalidCookie: true });
 
     return ok({
       authenticated: Boolean(user),

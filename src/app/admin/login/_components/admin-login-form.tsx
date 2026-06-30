@@ -20,7 +20,6 @@ export function AdminLoginForm() {
           id="admin-username"
           name="username"
           type="text"
-          defaultValue="admin"
           autoComplete="username"
           required
         />
@@ -31,7 +30,6 @@ export function AdminLoginForm() {
           id="admin-password"
           name="password"
           type="password"
-          defaultValue="admin123"
           autoComplete="current-password"
           required
         />

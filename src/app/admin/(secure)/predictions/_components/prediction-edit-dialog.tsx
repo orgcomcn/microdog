@@ -18,7 +18,7 @@ type PredictionItem = {
   targetPrice: string;
   status: "DRAFT" | "PUBLISHED" | "UNPUBLISHED" | "EXPIRED";
   publishAt: string;
-  effectiveUntil: string;
+  effectiveUntil: string | null;
   summary: string | null;
   updatedAt: string;
 };
@@ -74,11 +74,14 @@ export function PredictionEditDialog({ prediction }: { prediction: PredictionIte
             />
           </AdminField>
 
-          <AdminField label="有效时间">
+          <AdminField label="有效时间（可选）">
             <AdminDateTimeField
               name="effectiveUntil"
-              defaultValue={toShanghaiDateTimeLocalValue(prediction.effectiveUntil)}
-              required
+              defaultValue={
+                prediction.effectiveUntil
+                  ? toShanghaiDateTimeLocalValue(prediction.effectiveUntil)
+                  : undefined
+              }
             />
           </AdminField>
 

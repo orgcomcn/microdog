@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { formatShanghaiDateTime } from "@/lib/datetime";
 import { getPredictionStatusLabel, getUserStatusLabel } from "@/lib/labels";
@@ -10,7 +11,7 @@ import { AdminPageShell } from "../_components/admin-page-shell";
 import { AdminTopbar } from "../_components/admin-topbar";
 
 function buildOverviewHref(userPage: number, predictionPage: number) {
-  return `/admin?userPage=${userPage}&predictionPage=${predictionPage}`;
+  return `/admin?userPage=${userPage}&predictionPage=${predictionPage}` as Route;
 }
 
 function OverviewMiniPager({

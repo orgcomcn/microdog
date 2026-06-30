@@ -41,6 +41,7 @@ export default async function AdminPredictionsPage({
   return (
     <AdminPageShell
       title="后台 / 预测管理"
+      description="管理 BTC / ETH 预测内容、发布时间、有效时间和前台展示状态。"
     >
       <AdminTopbar />
 
@@ -73,8 +74,8 @@ export default async function AdminPredictionsPage({
           <AdminField label="发布时间">
             <AdminDateTimeField name="publishAt" required />
           </AdminField>
-          <AdminField label="有效时间">
-            <AdminDateTimeField name="effectiveUntil" required />
+          <AdminField label="有效时间（可选）">
+            <AdminDateTimeField name="effectiveUntil" />
           </AdminField>
           <AdminField label="预测说明" className="lg:col-span-2">
             <AdminTextarea name="summary" rows={4} placeholder="补充预测背景、策略依据或风险说明" />
@@ -95,7 +96,7 @@ export default async function AdminPredictionsPage({
               预测列表
             </div>
             <div className="mt-2 text-sm text-white/52">
-              列表只展示摘要信息，编辑通过弹窗完成，避免占用整页空间。前台仅显示状态为 `PUBLISHED` 且当前时间落在发布时间区间内的数据。
+              列表只展示摘要信息，编辑通过弹窗完成，避免占用整页空间。前台仅显示状态为 `PUBLISHED`、已到发布时间，且未过期或长期有效的数据。
             </div>
           </div>
         </AdminTableToolbar>
@@ -139,7 +140,9 @@ export default async function AdminPredictionsPage({
                     ) : null}
                   </AdminTd>
                   <AdminTd>{formatShanghaiDateTime(prediction.publishAt)}</AdminTd>
-                  <AdminTd>{formatShanghaiDateTime(prediction.effectiveUntil)}</AdminTd>
+                  <AdminTd>
+                    {prediction.effectiveUntil ? formatShanghaiDateTime(prediction.effectiveUntil) : "长期有效"}
+                  </AdminTd>
                   <AdminTd className="max-w-[280px] text-sm leading-6 text-white/68">
                     {prediction.summary || "暂无说明"}
                   </AdminTd>

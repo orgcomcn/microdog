@@ -1,7 +1,8 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 type AdminPaginationProps = {
-  pathname: string;
+  pathname: Route;
   page: number;
   pageSize: number;
   total: number;
@@ -10,7 +11,7 @@ type AdminPaginationProps = {
 };
 
 function buildHref(
-  pathname: string,
+  pathname: Route,
   page: number,
   pageSize: number,
   query?: Record<string, string | number | undefined>,
@@ -30,7 +31,7 @@ function buildHref(
   searchParams.set("page", String(page));
   searchParams.set("pageSize", String(pageSize));
 
-  return `${pathname}?${searchParams.toString()}`;
+  return `${pathname}?${searchParams.toString()}` as Route;
 }
 
 export function AdminPagination({

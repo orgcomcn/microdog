@@ -142,7 +142,7 @@ model Prediction {
   direction      PredictionDirection
   targetPrice    Decimal             @db.Decimal(18, 2)
   publishAt      DateTime
-  effectiveUntil DateTime
+  effectiveUntil DateTime?
   status         PredictionStatus    @default(DRAFT)
   summary        String?
   createdBy      String

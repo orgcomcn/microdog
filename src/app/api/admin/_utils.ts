@@ -2,7 +2,7 @@ import { fail } from "@/lib/api";
 import { findAdminSession } from "@/lib/auth";
 
 export async function requireAdminApiSession() {
-  const session = await findAdminSession();
+  const session = await findAdminSession({ clearInvalidCookie: true });
 
   if (!session) {
     return {

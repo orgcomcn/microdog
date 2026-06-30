@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 export function LocksPagination({
   page,
@@ -24,7 +25,7 @@ export function LocksPagination({
     }
 
     searchParams.set("page", String(targetPage));
-    return `/locks?${searchParams.toString()}`;
+    return `/locks?${searchParams.toString()}` as Route;
   };
 
   return (

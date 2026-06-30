@@ -87,6 +87,10 @@ export async function clearAdminSessionCookie() {
   cookieStore.set(ADMIN_SESSION_COOKIE, "", buildCookieOptions(0));
 }
 
+type FindSessionOptions = {
+  clearInvalidCookie?: boolean;
+};
+
 export function buildWalletLoginMessage(address: string, nonce: string) {
   const normalizedAddress = address.toLowerCase();
   const issuedAt = new Date().toISOString();
@@ -102,7 +106,7 @@ export function buildWalletLoginMessage(address: string, nonce: string) {
   ].join("\n");
 }
 
-export async function findSessionUser() {
+export async function findSessionUser(options?: FindSessionOptions) {
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(AUTH_SESSION_COOKIE)?.value;
 
@@ -128,12 +132,18 @@ export async function findSessionUser() {
   });
 
   if (!session || session.expiresAt < new Date()) {
-    await clearSessionCookie();
+    if (options?.clearInvalidCookie) {
+      await clearSessionCookie();
+    }
+
     return null;
   }
 
   if (session.user.status === "FROZEN") {
-    await clearSessionCookie();
+    if (options?.clearInvalidCookie) {
+      await clearSessionCookie();
+    }
+
     return null;
   }
 
@@ -182,7 +192,7 @@ export async function persistAdminSession(username: string) {
   };
 }
 
-export async function findAdminSession() {
+export async function findAdminSession(options?: FindSessionOptions) {
   const cookieStore = await cookies();
   const rawToken = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
 
@@ -196,7 +206,10 @@ export async function findAdminSession() {
   });
 
   if (!session || session.expiresAt < new Date()) {
-    await clearAdminSessionCookie();
+    if (options?.clearInvalidCookie) {
+      await clearAdminSessionCookie();
+    }
+
     return null;
   }
 

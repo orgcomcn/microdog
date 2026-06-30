@@ -16,7 +16,7 @@ function readRequiredString(formData: FormData, key: string, label: string) {
 }
 
 export async function createPointsLockAction(formData: FormData) {
-  const user = await findSessionUser();
+  const user = await findSessionUser({ clearInvalidCookie: true });
 
   if (!user) {
     throw new Error("请先登录钱包。");

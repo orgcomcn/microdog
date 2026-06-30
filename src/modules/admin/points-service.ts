@@ -13,7 +13,7 @@ export async function getAdminPointLogs(input?: {
   const keyword = input?.keyword?.trim();
   const type = input?.type && input.type !== "ALL" ? input.type : undefined;
   const where = {
-    ...(type && type !== "ALL" ? { type } : {}),
+    ...(type ? { type } : {}),
     ...(keyword
       ? {
           OR: [

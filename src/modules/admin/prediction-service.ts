@@ -8,6 +8,12 @@ import { parseShanghaiDateTimeLocal } from "@/lib/datetime";
 import { prisma } from "@/lib/prisma";
 import { buildPagination, toPaginationResult } from "@/modules/admin/pagination";
 
+function parseOptionalShanghaiDateTimeLocal(value?: string | null) {
+  const normalized = value?.trim();
+
+  return normalized ? parseShanghaiDateTimeLocal(normalized) : null;
+}
+
 export async function getAdminPredictions(input?: { page?: number; pageSize?: number }) {
   const { page, pageSize, skip, take } = buildPagination(input?.page, input?.pageSize);
   const [rows, total] = await Promise.all([
@@ -19,26 +25,31 @@ export async function getAdminPredictions(input?: { page?: number; pageSize?: nu
     prisma.prediction.count(),
   ]);
 
-  const items = rows.map((row) => ({
-    ...row,
-    targetPrice: row.targetPrice.toString(),
-    publishAt: row.publishAt.toISOString(),
-    effectiveUntil: row.effectiveUntil.toISOString(),
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    isVisibleOnFront:
-      row.status === PredictionStatus.PUBLISHED &&
-      row.publishAt.getTime() <= Date.now() &&
-      row.effectiveUntil.getTime() >= Date.now(),
-    frontVisibilityReason:
-      row.status !== PredictionStatus.PUBLISHED
-        ? "状态不是已发布"
-        : row.publishAt.getTime() > Date.now()
-          ? "发布时间还没到"
-          : row.effectiveUntil.getTime() < Date.now()
-            ? "已超过有效期"
-            : "前台展示中",
-  }));
+  const now = Date.now();
+  const items = rows.map((row) => {
+    const isExpired = row.effectiveUntil ? row.effectiveUntil.getTime() < now : false;
+
+    return {
+      ...row,
+      targetPrice: row.targetPrice.toString(),
+      publishAt: row.publishAt.toISOString(),
+      effectiveUntil: row.effectiveUntil?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      isVisibleOnFront:
+        row.status === PredictionStatus.PUBLISHED &&
+        row.publishAt.getTime() <= now &&
+        !isExpired,
+      frontVisibilityReason:
+        row.status !== PredictionStatus.PUBLISHED
+          ? "状态不是已发布"
+          : row.publishAt.getTime() > now
+            ? "发布时间还没到"
+            : isExpired
+              ? "已超过有效期"
+              : "前台展示中",
+    };
+  });
 
   return toPaginationResult(items, total, page, pageSize);
 }
@@ -48,7 +59,7 @@ export async function createAdminPrediction(input: {
   direction: PredictionDirection;
   targetPrice: string;
   publishAt: string;
-  effectiveUntil: string;
+  effectiveUntil?: string | null;
   summary?: string;
   status: PredictionStatus;
   operator: string;
@@ -59,7 +70,7 @@ export async function createAdminPrediction(input: {
       direction: input.direction,
       targetPrice: input.targetPrice,
       publishAt: parseShanghaiDateTimeLocal(input.publishAt),
-      effectiveUntil: parseShanghaiDateTimeLocal(input.effectiveUntil),
+      effectiveUntil: parseOptionalShanghaiDateTimeLocal(input.effectiveUntil),
       summary: input.summary?.trim() || null,
       status: input.status,
       createdBy: input.operator,
@@ -74,7 +85,7 @@ export async function updateAdminPrediction(input: {
   direction: PredictionDirection;
   targetPrice: string;
   publishAt: string;
-  effectiveUntil: string;
+  effectiveUntil?: string | null;
   summary?: string;
   status: PredictionStatus;
   operator: string;
@@ -88,7 +99,7 @@ export async function updateAdminPrediction(input: {
       direction: input.direction,
       targetPrice: input.targetPrice,
       publishAt: parseShanghaiDateTimeLocal(input.publishAt),
-      effectiveUntil: parseShanghaiDateTimeLocal(input.effectiveUntil),
+      effectiveUntil: parseOptionalShanghaiDateTimeLocal(input.effectiveUntil),
       summary: input.summary?.trim() || null,
       status: input.status,
       updatedBy: input.operator,
@@ -112,9 +123,14 @@ export async function getPublishedPredictionsForFront() {
       publishAt: {
         lte: now,
       },
-      effectiveUntil: {
-        gte: now,
-      },
+      OR: [
+        { effectiveUntil: null },
+        {
+          effectiveUntil: {
+            gte: now,
+          },
+        },
+      ],
     },
     orderBy: [
       { publishAt: "desc" },
@@ -128,7 +144,7 @@ export async function getPublishedPredictionsForFront() {
     direction: row.direction,
     targetPrice: row.targetPrice.toString(),
     publishAt: row.publishAt.toISOString(),
-    effectiveUntil: row.effectiveUntil.toISOString(),
+    effectiveUntil: row.effectiveUntil?.toISOString() ?? null,
     summary: row.summary,
   }));
 }
@@ -145,7 +161,10 @@ export async function getPredictionFrontVisibilitySummary() {
       where: {
         status: PredictionStatus.PUBLISHED,
         publishAt: { lte: now },
-        effectiveUntil: { gte: now },
+        OR: [
+          { effectiveUntil: null },
+          { effectiveUntil: { gte: now } },
+        ],
       },
     }),
     prisma.prediction.count({

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
+import { Suspense } from "react";
 
 import { HeaderWalletPanel } from "@/components/wallet/header-wallet-panel";
 
@@ -74,7 +75,16 @@ export function SiteHeader({
           </nav>
 
           <div className="lg:justify-self-end">
-            <HeaderWalletPanel />
+            <Suspense
+              fallback={
+                <div
+                  aria-hidden="true"
+                  className="h-12 w-full max-w-[220px] rounded-full border border-white/10 bg-[#101632]/72"
+                />
+              }
+            >
+              <HeaderWalletPanel />
+            </Suspense>
           </div>
         </div>
       </header>
