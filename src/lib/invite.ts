@@ -1,4 +1,4 @@
-export const INVITE_BASE_URL = "http://localhost:3000";
+export const INVITE_BASE_URL = "https://microdoge.ai";
 
 export function buildInviteLink(inviteCode: string | null | undefined) {
   if (!inviteCode) {
